@@ -1,17 +1,26 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import dotenv from "dotenv";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Explicitly load truck_server/.env before importing routes/services
+dotenv.config({ path: path.join(__dirname, ".env") });
+
+console.log("==========================================");
+console.log("Backend process startup directory:", __dirname);
+console.log(".env file path:", path.join(__dirname, ".env"));
+console.log("Gemini API key configured:", Boolean(process.env.GEMINI_API_KEY));
+console.log("==========================================");
 
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
-import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import forecastRoutes from "./routes/forecast.js";
 import aiRoutes from "./routes/ai.js";
-
-const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
-dotenv.config({ path: path.join(serverDirectory, ".env") });
 
 const PORT = process.env.PORT || 7000;
 

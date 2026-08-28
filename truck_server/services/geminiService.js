@@ -1,5 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
+const MODEL_CANDIDATES = ["gemini-3.6-flash", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+
 /**
  * Builds a structured, concise context string from dashboard state for AI Co-Pilot grounding.
  */
@@ -88,17 +90,15 @@ Your core expertise:
 - Dry bulk shipping (Capesize, Panamax, Supramax, Handysize carriers, DWT capacities, draft/LOA/beam constraints, geared vs gearless, bunker fuel consumption).
 - Indian East Coast ports: Paradip, Visakhapatnam, Gangavaram, Gopalpur, Dhamra, Haldia, Sagar/Sandheads.
 - Key global bulk loading origins: Australia (Newcastle, Gladstone), USA (Hampton Roads, Baltimore), Mozambique (Nacala), Russia (Vostochny, Ust-Luga), Indonesia (Taboneo Anchorage).
-- Freight rate forecasting, market intelligence (demand regimes, vessel supply tightness, pricing pressure), and chartering timing signals (CHARTER NOW, MONITOR, WAIT).
-- Port congestion, draft restrictions, queue delays, demurrage exposure, and turnaround times.
+- Freight rate forecasting, market intelligence, and chartering timing signals.
+- Port congestion, draft restrictions, and queue delays.
 - AI-assisted vessel optimization and waiting/idle time reduction calculations.
 
 STRICT OPERATIONAL RULES:
 1. Ground your answers directly in the provided [LIVE DASHBOARD & ML FORECAST CONTEXT].
 2. When the user asks about rates, trends, port wait times, or vessel optimization, use the actual numbers from the context.
-3. If no forecast has been run yet, provide expert maritime domain knowledge and suggest running a forecast for their specific route.
-4. Clearly distinguish between model-derived figures and operational advice.
-5. Keep explanations concise, professional, grounded, structured with bullet points where helpful, and decision-oriented.
-6. Do not fabricate rates or data that are not in the context.`;
+3. Keep explanations concise, professional, grounded, and decision-oriented.
+4. Do not fabricate rates or data that are not in the context.`;
 
 /**
  * Uses Gemini API to analyze the full forecast & optimization context and generate
@@ -133,7 +133,6 @@ export const generateAIForecastPreview = async (context = {}) => {
 
   const apiKey = process.env.GEMINI_API_KEY;
 
-  // Fallback builder if Gemini is unavailable
   const fallbackPreview = () => {
     let trend = "Stable";
     if (predictedRate > currentRate * 1.015) trend = "Increasing";
@@ -154,13 +153,13 @@ export const generateAIForecastPreview = async (context = {}) => {
   };
 
   if (!apiKey || apiKey.includes("your_") || apiKey.length < 15) {
+    console.warn("GEMINI_API_KEY not configured or placeholder. Returning grounded ML fallback.");
     return fallbackPreview();
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
-    const prompt = `You are generating a compact freight forecast preview for the dashboard.
+  const prompt = `You are generating a compact freight forecast preview for the dashboard.
 
 Use the supplied application context as the source of truth:
 - Route: ${origin} to ${destination}
@@ -193,34 +192,45 @@ Return ONLY a valid JSON object with these exact keys:
   "summary": string
 }`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-      config: {
-        responseMimeType: "application/json",
-        temperature: 0.1,
-      },
-    });
+  for (const modelName of MODEL_CANDIDATES) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          temperature: 0.1,
+        },
+      });
 
-    const responseText = response.text || "";
-    const cleaned = responseText.replace(/^```json\s*/, "").replace(/```\s*$/, "").trim();
-    const parsed = JSON.parse(cleaned);
+      const responseText = response.text || "";
+      const cleaned = responseText.replace(/^```json\s*/, "").replace(/```\s*$/, "").trim();
+      const parsed = JSON.parse(cleaned);
 
-    return {
-      estimated_rate: Number(parsed.estimated_rate ?? predictedRate),
-      unit: parsed.unit || "USD/MT",
-      horizon_days: Number(parsed.horizon_days ?? horizonDays),
-      confidence_percent: Number(parsed.confidence_percent ?? 88),
-      trend: parsed.trend || "Stable",
-      chart_values: Array.isArray(parsed.chart_values) && parsed.chart_values.length >= 5
-        ? parsed.chart_values.slice(-5).map(v => Number(Number(v).toFixed(2)))
-        : forecastSeries.slice(-5).map(v => Number(Number(v).toFixed(2))),
-      summary: parsed.summary || `Projected at $${predictedRate.toFixed(2)}/MT for ${horizonDays}-day horizon.`
-    };
-  } catch (err) {
-    console.warn("Gemini forecast preview generation error, falling back to ML context:", err.message);
-    return fallbackPreview();
+      console.log(`Gemini API call SUCCESS with model: ${modelName}`);
+
+      return {
+        estimated_rate: Number(parsed.estimated_rate ?? predictedRate),
+        unit: parsed.unit || "USD/MT",
+        horizon_days: Number(parsed.horizon_days ?? horizonDays),
+        confidence_percent: Number(parsed.confidence_percent ?? 88),
+        trend: parsed.trend || "Stable",
+        chart_values: Array.isArray(parsed.chart_values) && parsed.chart_values.length >= 5
+          ? parsed.chart_values.slice(-5).map(v => Number(Number(v).toFixed(2)))
+          : forecastSeries.slice(-5).map(v => Number(Number(v).toFixed(2))),
+        summary: parsed.summary || `Projected at $${predictedRate.toFixed(2)}/MT for ${horizonDays}-day horizon.`
+      };
+    } catch (err) {
+      console.warn(`Gemini model ${modelName} error (${err.status || err.code || "unknown"}): ${err.message}`);
+      // If error is 429 quota, break and fallback gracefully
+      if (err.status === 429 || (err.message && err.message.includes("quota"))) {
+        console.warn("Gemini Free Tier quota reached. Serving grounded ML forecast preview.");
+        break;
+      }
+    }
   }
+
+  return fallbackPreview();
 };
 
 /**
@@ -268,62 +278,68 @@ export const chatWithCopilot = async ({
     };
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
+  const ai = new GoogleGenAI({ apiKey });
 
-    const contents = [
-      {
-        role: "user",
-        parts: [{ text: `System Context & Current Live Dashboard Data:\n${contextText}\n\nPlease acknowledge and assist the user with this data.` }],
-      },
-      {
-        role: "model",
-        parts: [{ text: "Understood. I am Freight AI Co-Pilot, fully grounded in your active route, freight forecast, vessel optimization, and port analysis." }],
-      },
-    ];
-
-    for (const hist of boundedHistory) {
-      contents.push({
-        role: hist.role,
-        parts: [{ text: hist.text }],
-      });
-    }
-
-    contents.push({
+  const contents = [
+    {
       role: "user",
-      parts: [{ text: message }],
+      parts: [{ text: `System Context & Current Live Dashboard Data:\n${contextText}\n\nPlease acknowledge and assist the user with this data.` }],
+    },
+    {
+      role: "model",
+      parts: [{ text: "Understood. I am Freight AI Co-Pilot, fully grounded in your active route, freight forecast, vessel optimization, and port analysis." }],
+    },
+  ];
+
+  for (const hist of boundedHistory) {
+    contents.push({
+      role: hist.role,
+      parts: [{ text: hist.text }],
     });
-
-    const response = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents,
-      config: {
-        systemInstruction: SYSTEM_INSTRUCTION,
-        temperature: 0.25,
-      },
-    });
-
-    const answer = response.text || "I have analyzed your freight query based on current operational data.";
-
-    return {
-      success: true,
-      answer: answer.trim(),
-      sources: [
-        "Freight Forecaster (XGBoost + SARIMA)",
-        "Port Optimizer & Sagar Unnati Calibrated Congestion",
-        "Vessel Optimization Engine",
-      ],
-      suggestions,
-    };
-  } catch (error) {
-    console.error("Gemini API Error in chatWithCopilot:", error.message || error);
-    return {
-      success: true,
-      answer: generateRuleBasedFallbackAnswer(message, contextText, forecastContext, currentOptimization),
-      sources: ["Freight ML Pipeline", "Port Congestion Engine", "Vessel Optimizer"],
-      suggestions,
-    };
   }
+
+  contents.push({
+    role: "user",
+    parts: [{ text: message }],
+  });
+
+  for (const modelName of MODEL_CANDIDATES) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents,
+        config: {
+          systemInstruction: SYSTEM_INSTRUCTION,
+          temperature: 0.25,
+        },
+      });
+
+      const answer = response.text || "I have analyzed your freight query based on current operational data.";
+
+      return {
+        success: true,
+        answer: answer.trim(),
+        sources: [
+          "Freight Forecaster (XGBoost + SARIMA)",
+          "Port Optimizer & Sagar Unnati Calibrated Congestion",
+          "Vessel Optimization Engine",
+        ],
+        suggestions,
+      };
+    } catch (error) {
+      console.warn(`Gemini Chat with ${modelName} error:`, error.message);
+      if (error.status === 429 || (error.message && error.message.includes("quota"))) {
+        break;
+      }
+    }
+  }
+
+  return {
+    success: true,
+    answer: generateRuleBasedFallbackAnswer(message, contextText, forecastContext, currentOptimization),
+    sources: ["Freight ML Pipeline", "Port Congestion Engine", "Vessel Optimizer"],
+    suggestions,
+  };
 };
 
 const generateContextualSuggestions = ({ forecastContext = {}, currentOptimization = {}, message = "" }) => {
@@ -364,8 +380,6 @@ const generateRuleBasedFallbackAnswer = (question, contextText, forecastContext,
   const selV = opt.selected_vessel || {};
   const optV = opt.optimized_vessel || {};
   const comp = opt.optimization_comparison || {};
-  const portOpt = f.optimal_port || {};
-  const portAnalysis = f.port_analysis || {};
 
   const hasForecast = Boolean(f.latestRate || f.predictedRate || f.forecast30Day?.rate);
 
@@ -398,18 +412,22 @@ export const generateForecastExplanation = async ({ input, modelForecast }) => {
     return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT in 30 days.`;
   }
 
-  try {
-    const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Explain this bulk freight forecast for a logistics manager:
+  const ai = new GoogleGenAI({ apiKey });
+  const prompt = `Explain this bulk freight forecast for a logistics manager:
 Route: ${input.origin} to ${input.destination}; vessel: ${input.vesselType}; cargo: ${input.cargoQuantity} MT;
 Forecast model: ${JSON.stringify(modelForecast)}`;
 
-    const result = await ai.models.generateContent({
-      model: "gemini-2.5-flash",
-      contents: prompt,
-    });
-    return result.text.trim();
-  } catch (err) {
-    return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT.`;
+  for (const modelName of MODEL_CANDIDATES) {
+    try {
+      const result = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+      });
+      return result.text.trim();
+    } catch (err) {
+      if (err.status === 429) break;
+    }
   }
+
+  return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT.`;
 };
