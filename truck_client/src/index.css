@@ -397,3 +397,142 @@ button.btn:active, a.btn:active { background-color: #8dbb83 !important; color: #
 .query-preview-heading > div > span,
 .query-preview-stats span { color: rgba(255,255,255,.7) !important; }
 .query-preview-heading b { color: #c9e8ba !important; }
+/* ============================================================ */
+/* BUTTER FREIGHT FOOTER SYSTEM - HIGH CONTRAST & VISIBILITY */
+/* ============================================================ */
+footer,
+footer[style],
+.site-footer,
+.home-page footer,
+.about-page footer,
+.forecast-page footer {
+  background-color: #071b1e !important;
+  background: #071b1e !important;
+  border-top: 1px solid #14383c !important;
+  color: #f1f5f9 !important;
+  position: relative;
+  z-index: 10;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.site-footer *,
+.site-footer p,
+.site-footer span,
+.site-footer small,
+.site-footer div,
+.site-footer li,
+.site-footer a,
+.home-page footer *,
+.about-page footer * {
+  opacity: 1 !important;
+  visibility: visible !important;
+  -webkit-text-fill-color: initial !important;
+  mix-blend-mode: normal !important;
+}
+
+/* Headings & Category Titles */
+.site-footer h6,
+.site-footer .footer-heading,
+.home-page footer h6,
+.about-page footer h6 {
+  color: #d6a84f !important; /* Butter Freight Warm Gold */
+  font-family: 'DM Sans', system-ui, -apple-system, sans-serif !important;
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  margin-bottom: 0.85rem !important;
+}
+
+/* Brand Name in Footer */
+.site-footer .brand-copy strong,
+.site-footer strong.footer-brand-name {
+  color: #ffffff !important;
+  font-family: Georgia, serif !important;
+  font-size: 1.18rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.01em !important;
+}
+
+.site-footer .brand-copy small,
+.site-footer .footer-brand-tagline {
+  color: #94a3b8 !important;
+  font-size: 0.7rem !important;
+  letter-spacing: 0.04em !important;
+}
+
+/* Brand Mark / Logo Icon */
+.site-footer .brand-mark-circle {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 50% !important;
+  background: #d6a84f !important;
+  color: #071b1e !important;
+  border: 2px solid #285943 !important;
+  font: 700 1.2rem/1 Georgia, serif !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Body & Description text */
+.site-footer p,
+.site-footer .footer-desc {
+  color: #94a3b8 !important; /* High contrast soft slate gray */
+  font-size: 0.86rem !important;
+  line-height: 1.6 !important;
+}
+
+/* Links in Footer */
+.site-footer a,
+.site-footer .footer-link,
+.home-page footer a,
+.about-page footer a {
+  color: #e2e8f0 !important; /* Soft warm off-white, 100% visible */
+  text-decoration: none !important;
+  font-size: 0.88rem !important;
+  font-weight: 500 !important;
+  transition: all 0.2s ease !important;
+  display: inline-block !important;
+  opacity: 1 !important;
+}
+
+.site-footer a:hover,
+.site-footer .footer-link:hover,
+.home-page footer a:hover,
+.about-page footer a:hover,
+.footer-meta-link:hover {
+  color: #d6a84f !important; /* Warm gold hover */
+  transform: translateX(2px) !important;
+}
+
+.site-footer a:visited,
+.site-footer .footer-link:visited {
+  color: #e2e8f0 !important; /* Do not darken when visited */
+}
+
+/* Badges & Pills */
+.site-footer .badge,
+.site-footer .footer-badge {
+  background-color: rgba(214, 168, 79, 0.15) !important;
+  color: #d6a84f !important;
+  border: 1px solid rgba(214, 168, 79, 0.35) !important;
+  font-size: 0.72rem !important;
+  font-weight: 600 !important;
+  padding: 4px 10px !important;
+}
+
+/* Bottom copyright row */
+.site-footer .footer-bottom,
+.site-footer .footer-bottom small,
+.site-footer .footer-bottom span {
+  color: #94a3b8 !important;
+  font-size: 0.78rem !important;
+}
+
+.site-footer .footer-accent-text {
+  color: #d6a84f !important;
+  font-size: 0.78rem !important;
+  font-weight: 600 !important;
+}
