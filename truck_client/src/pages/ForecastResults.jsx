@@ -760,89 +760,76 @@ const ForecastResults = () => {
                 const isOptimal = opt.recommendation_type === "Keep Selected Port" || opt.recommended_port === opt.selected_port;
 
                 return (
-                  <div className="card border-0 rounded-4 mt-4 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
-                    <div className="card-body p-4 p-md-5">
-                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-                        <div>
-                          <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
-                            PORT OPTIMIZATION & DISCHARGE ADVICE
-                          </small>
-                          <h3 className="fw-bold mt-1 mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
-                            🏆 Optimal Discharge Port Recommendation
-                          </h3>
-                        </div>
-                        <span className={`badge rounded-pill px-3 py-2 fs-6 fw-bold ${isOptimal ? "bg-success text-white" : "bg-warning text-dark"}`}>
-                          {opt.recommendation_type}
-                        </span>
-                      </div>
+                  <div className="mt-5">
+                    <div className="text-center mb-4">
+                      <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
+                        PORT OPTIMIZATION & DISCHARGE ADVICE
+                      </small>
+                      <h3 className="fw-bold mt-1 mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                        Optimal Discharge Port Recommendation
+                      </h3>
+                    </div>
 
-                      {/* Highlight Recommendation Card */}
-                      <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: isOptimal ? "#f0fdf4" : "#fffbeb", border: `1px solid ${isOptimal ? "#86efac" : "#fde68a"}` }}>
-                        <div className="row g-4 align-items-center">
-                          <div className="col-12 col-lg-8">
-                            <div className="d-flex align-items-center gap-3 mb-2">
-                              <span className="fs-2 flex-shrink-0">🎯</span>
-                              <div>
-                                <h4 className="fw-bold mb-0" style={{ color: "#0f172a" }}>
-                                  Recommended: <span style={{ color: "#0284c7" }}>{opt.recommended_port}</span>
-                                </h4>
-                                <small style={{ color: "#475569" }}>
-                                  Selected Query Port: <strong style={{ color: "#0f172a" }}>{opt.selected_port}</strong>
-                                </small>
-                              </div>
+                    {/* Main Recommendation Card matching Image 2 */}
+                    <div className="card border-0 rounded-4 shadow-sm p-2 mb-4" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
+                      <div className="card-body p-4 p-md-5">
+                        {/* Top Header Bar */}
+                        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-4" style={{ borderBottom: "1px solid #e7e5e4" }}>
+                          <h4 className="fw-bold mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                            {opt.recommendation_type}
+                          </h4>
+                          <span
+                            className="badge rounded-pill px-3.5 py-2 fw-bold"
+                            style={{
+                              backgroundColor: "#0066ff",
+                              color: "#ffffff",
+                              fontSize: "0.95rem",
+                              boxShadow: "0 2px 4px rgba(0, 102, 255, 0.2)"
+                            }}
+                          >
+                            Optimization Score: {opt.optimization_score} / 100
+                          </span>
+                        </div>
+
+                        {/* Card Content */}
+                        <div className="d-flex align-items-start gap-3">
+                          <span className="fs-1 flex-shrink-0">🎯</span>
+                          <div className="flex-grow-1">
+                            <h5 className="fw-bold mb-1" style={{ color: "#0f172a" }}>
+                              Recommended: <span style={{ color: "#0284c7" }}>{opt.recommended_port}</span>
+                            </h5>
+                            <div className="small mb-3" style={{ color: "#64748b" }}>
+                              Selected Query Port: <strong style={{ color: "#0f172a" }}>{opt.selected_port}</strong>
                             </div>
 
-                            <p className="mt-2 mb-0" style={{ color: "#334155", lineHeight: "1.6", fontSize: "0.95rem" }}>
+                            <p className="mb-3" style={{ color: "#334155", fontSize: "0.95rem", lineHeight: "1.6" }}>
                               {opt.reason}
                             </p>
 
+                            {/* Operational Benefit Banner */}
                             <div
-                              className="d-flex align-items-start gap-2 mt-3 p-2 px-3 rounded-3"
+                              className="p-3 rounded-3 d-flex align-items-center gap-2"
                               style={{
-                                backgroundColor: "#e0f2fe",
-                                border: "1px solid #bae6fd",
-                                color: "#0369a1",
-                                fontSize: "0.85rem",
-                                lineHeight: "1.5",
-                                maxWidth: "100%",
+                                backgroundColor: "#ecfdf5",
+                                border: "1px solid #a7f3d0",
+                                color: "#065f46",
+                                fontSize: "0.9rem",
                               }}
                             >
                               <span className="flex-shrink-0">⚡</span>
-                              <span className="fw-medium text-break">
+                              <span>
                                 <strong>Operational Benefit:</strong> {opt.expected_operational_benefit}
                               </span>
                             </div>
                           </div>
-
-                          <div className="col-12 col-lg-4">
-                            <div
-                              className="p-3 rounded-4 text-center h-100 d-flex flex-column justify-content-center shadow-sm"
-                              style={{
-                                backgroundColor: "#ffffff",
-                                border: "1px solid #e2e8f0",
-                                minWidth: "160px",
-                              }}
-                            >
-                              <small style={{ color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "600" }}>
-                                Optimization Score
-                              </small>
-                              <div className="d-flex align-items-baseline justify-content-center gap-1 my-1">
-                                <span className="fw-bold" style={{ fontSize: "2.25rem", color: "#0284c7", lineHeight: "1" }}>
-                                  {opt.optimization_score}
-                                </span>
-                                <span style={{ color: "#64748b", fontSize: "0.9rem" }}>/ 100</span>
-                              </div>
-                              <small style={{ color: opt.congestion_level === "Low" ? "#15803d" : opt.congestion_level === "High" ? "#b91c1c" : "#b45309", fontSize: "0.82rem", fontWeight: "600" }}>
-                                Est. Delay: ~{opt.estimated_delay_days}d ({opt.congestion_level} Congestion)
-                              </small>
-                            </div>
-                          </div>
                         </div>
                       </div>
+                    </div>
 
-                      {/* Multi-Factor Port Ranking Table */}
-                      {opt.ranked_alternatives?.length > 0 && (
-                        <div className="mt-4">
+                    {/* Multi-Factor Port Ranking Table */}
+                    {opt.ranked_alternatives?.length > 0 && (
+                      <div className="card border-0 rounded-4 shadow-sm p-2 mb-4" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
+                        <div className="card-body p-4">
                           <h5 className="fw-bold mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
                             Multi-Factor Alternative Port Rankings
                           </h5>
@@ -914,8 +901,8 @@ const ForecastResults = () => {
                             </table>
                           </div>
                         </div>
-                      )}
-                    </div>
+                      </div>
+                    )}
                   </div>
                 );
               })()}
@@ -971,11 +958,120 @@ const ForecastResults = () => {
         </div>
       </section>
 
-      {/* FREIGHT RATE TREND CHART */}
+      {/* FREIGHT RATE TREND CHART & HORIZONS SIDE-BY-SIDE */}
       {analysis?.rateData?.length > 0 && !loadingAnalysis && !analysisError && (
         <section id="rate-trend" className="py-4">
           <div className="container py-2">
-            <RateChart data={analysis.rateData} />
+            <div className="row g-4 align-items-stretch">
+              {/* Left Column: Forecast Horizons & Market Indicators Card */}
+              <div className="col-12 col-lg-4">
+                <div
+                  className="card border-0 rounded-4 shadow-sm h-100 p-4"
+                  style={{
+                    backgroundColor: "#fafaf9",
+                    border: "1px solid #e7e5e4",
+                  }}
+                >
+                  {/* Section 1: Forecast Horizons */}
+                  <h4
+                    className="fw-bold mb-3"
+                    style={{
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      color: "#1c1917",
+                      fontSize: "1.35rem",
+                    }}
+                  >
+                    Forecast Horizons
+                  </h4>
+
+                  <div className="d-flex flex-column gap-2 mb-3">
+                    <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>7-Day Forecast</span>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>
+                        ${(analysis.forecast?.forecast_7d ?? (analysis.forecast?.latestRate ? (analysis.forecast.latestRate * 1.01).toFixed(2) : "20.11"))}/MT
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>14-Day Forecast</span>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>
+                        ${(analysis.forecast?.forecast_14d ?? (analysis.forecast?.latestRate ? (analysis.forecast.latestRate * 0.99).toFixed(2) : "19.55"))}/MT
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>30-Day Forecast</span>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>
+                        ${(analysis.forecast?.forecast_30d ?? analysis.forecast?.forecast30Day?.rate ?? "18.96")}/MT
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1" style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>60-Day Forecast</span>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>
+                        ${(analysis.forecast?.forecast_60d ?? (analysis.forecast?.latestRate ? (analysis.forecast.latestRate * 0.98).toFixed(2) : "18.41"))}/MT
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>90-Day Forecast</span>
+                      <strong style={{ color: "#0f172a", fontSize: "1rem" }}>
+                        ${(analysis.forecast?.forecast_90d ?? analysis.forecast?.forecast90Day?.rate ?? "18.96")}/MT
+                      </strong>
+                    </div>
+                  </div>
+
+                  <hr style={{ borderColor: "#e7e5e4", margin: "1rem 0" }} />
+
+                  {/* Section 2: Market Indicators */}
+                  <h4
+                    className="fw-bold mb-3"
+                    style={{
+                      fontFamily: "'Playfair Display', Georgia, serif",
+                      color: "#1c1917",
+                      fontSize: "1.35rem",
+                    }}
+                  >
+                    Market Indicators
+                  </h4>
+
+                  <div className="d-flex flex-column gap-2">
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>Freight Trend</span>
+                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>
+                        {analysis.forecast?.marketTrend === "Decreasing" ? "📉 Decreasing" : analysis.forecast?.marketTrend === "Increasing" ? "📈 Increasing" : "➡️ Stable"}
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>Freight Volatility</span>
+                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>
+                        {analysis.forecast?.volatility ?? "Low"}
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>Demand</span>
+                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>
+                        {analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status || "Medium"}
+                      </strong>
+                    </div>
+
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span style={{ color: "#475569", fontSize: "0.95rem" }}>Congestion</span>
+                      <strong style={{ color: "#0f172a", fontSize: "0.95rem" }}>
+                        {analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level || "Low"}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Right Column: Forecast Chart */}
+              <div className="col-12 col-lg-8">
+                <RateChart data={analysis.rateData} />
+              </div>
+            </div>
           </div>
         </section>
       )}

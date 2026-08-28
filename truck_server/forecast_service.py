@@ -46,6 +46,11 @@ def make_response(payload: dict) -> dict:
         "latestRate": res["current_freight_rate"],
         "predictedRate": res["predicted_freight_rate"],
         "forecastHorizonDays": res["forecast_horizon_days"],
+        "forecast_7d": res.get("forecast_7d"),
+        "forecast_14d": res.get("forecast_14d"),
+        "forecast_30d": res.get("forecast_30d"),
+        "forecast_60d": res.get("forecast_60d"),
+        "forecast_90d": res.get("forecast_90d"),
         "forecast30Day": {
             "rate": f30.get("rate", res["predicted_freight_rate"]),
             "lower": f30.get("lower", res["predicted_freight_rate"] * 0.95),
