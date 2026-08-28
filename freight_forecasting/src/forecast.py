@@ -133,39 +133,138 @@ class FreightForecaster:
 
         # 2. SARIMA Forecast (Baseline Comparison)
         series = route_df.set_index("date")["historical_freight_rate"].asfreq("D").interpolate(method="linear")
+
         sarima = SarimaModel()
-        sarima_forecast_30 = round(current_rate, 2)
-        sarima_forecast_90 = round(current_rate, 2)
+        sarima_forecasts = {
+            h: round(current_rate, 2)
+            for h in HORIZONS
+        }
+
         try:
             sarima.fit(series)
-            s_preds, s_low, s_high = sarima.forecast(steps=90)
-            sarima_forecast_30 = round(float(s_preds[min(29, len(s_preds)-1)]), 2)
-            sarima_forecast_90 = round(float(s_preds[min(89, len(s_preds)-1)]), 2)
+            s_preds, s_low, s_high = sarima.forecast(steps=max(HORIZONS))
+
+            for h in HORIZONS:
+                idx = min(h - 1, len(s_preds) - 1)
+                sarima_forecasts[h] = round(float(s_preds.iloc[idx] if hasattr(s_preds, "iloc") else s_preds[idx]), 2)
+
         except Exception:
             pass
 
-        # 3. Model Comparison & Auto-Selection
-        # Compare validation metrics; select superior model
-        best_model_name = "XGBoost"
-        xgb_mae = self.comparison_metrics.get("XGBoost", {}).get(str(forecast_horizon), {}).get("MAE", 0.45)
-        sarima_mae = self.comparison_metrics.get("SARIMA", {}).get(str(forecast_horizon), {}).get("MAE", 0.82)
-        
-        if sarima_mae < xgb_mae and sarima_mae > 0:
-            best_model_name = "SARIMA"
-            
-        selected_pred = xgb_forecasts.get(f"forecast_{forecast_horizon}d", {}).get("rate", current_rate)
+        sarima_forecast_30 = sarima_forecasts.get(30, round(current_rate, 2))
+        sarima_forecast_90 = sarima_forecasts.get(90, round(current_rate, 2))
 
-        # 4. Decision Engine (Trend, Volatility, Market Entry Signal)
-        f_30 = xgb_forecasts.get("forecast_30d", {}).get("rate", current_rate)
-        f_90 = xgb_forecasts.get("forecast_90d", {}).get("rate", current_rate)
-        recent_std = float(route_df["historical_freight_rate"].tail(30).std() or 0.5)
-        interval_width = (xgb_forecasts.get("forecast_30d", {}).get("upper", f_30) - 
-                          xgb_forecasts.get("forecast_30d", {}).get("lower", f_30))
-                          
-        trend = DecisionEngine.classify_trend(current_rate, f_30, f_90)
-        volatility = DecisionEngine.classify_volatility(recent_std, current_rate, interval_width)
-        market_signal, reason, strategy = DecisionEngine.generate_market_signal(
-            current_rate, xgb_forecasts, trend, volatility
+        # 3. Model Comparison & True Auto-Selection
+        best_model_name = "XGBoost"
+
+        xgb_mae = self.comparison_metrics.get(
+            "XGBoost", {}
+        ).get(
+            str(forecast_horizon), {}
+        ).get(
+            "MAE", float("inf")
+        )
+
+        sarima_mae = self.comparison_metrics.get(
+            "SARIMA", {}
+        ).get(
+            str(forecast_horizon), {}
+        ).get(
+            "MAE", float("inf")
+        )
+
+        if sarima_mae < xgb_mae:
+            best_model_name = "SARIMA"
+            selected_pred = sarima_forecasts.get(
+                forecast_horizon,
+                current_rate
+            )
+        else:
+            selected_pred = xgb_forecasts.get(
+                f"forecast_{forecast_horizon}d", {}
+            ).get(
+                "rate",
+                current_rate
+            )
+
+        # 4. Decision Engine (model-consistent trend and market signal)
+
+        # Recent historical volatility.
+        recent_std = float(
+            route_df["historical_freight_rate"]
+            .tail(30)
+            .std()
+            or 0.5
+        )
+
+        # Build the forecast curve from the model selected by validation.
+        if best_model_name == "SARIMA":
+            decision_forecasts = {}
+
+            for h in HORIZONS:
+                rate = float(sarima_forecasts.get(h, current_rate))
+                decision_forecasts[f"forecast_{h}d"] = {
+                    "rate": rate,
+
+                    # SARIMA confidence intervals are not yet stored per horizon.
+                    # Use a conservative temporary interval based on recent volatility.
+                    "lower": round(rate - recent_std, 2),
+                    "upper": round(rate + recent_std, 2),
+                    "std": round(recent_std, 4),
+                }
+
+        else:
+            decision_forecasts = xgb_forecasts
+
+        # Extract selected-model forecasts for trend analysis.
+        f_30 = decision_forecasts.get(
+            "forecast_30d", {}
+        ).get(
+            "rate", current_rate
+        )
+
+        f_90 = decision_forecasts.get(
+            "forecast_90d", {}
+        ).get(
+            "rate", current_rate
+        )
+
+        recent_std = float(
+            route_df["historical_freight_rate"]
+            .tail(30)
+            .std()
+            or 0.5
+        )
+
+        interval_width = (
+            decision_forecasts
+            .get("forecast_30d", {})
+            .get("upper", f_30)
+            -
+            decision_forecasts
+            .get("forecast_30d", {})
+            .get("lower", f_30)
+        )
+
+        trend = DecisionEngine.classify_trend(
+            current_rate,
+            f_30,
+            f_90
+        )
+
+        volatility = DecisionEngine.classify_volatility(
+            recent_std,
+            current_rate,
+            interval_width
+        )
+
+        market_signal, reason, strategy = (
+            DecisionEngine.generate_market_signal(
+                current_rate,
+                decision_forecasts,
+                trend,
+                volatility
+            )
         )
 
         # 5. Explainability (TreeSHAP / Top Drivers)
@@ -216,13 +315,19 @@ class FreightForecaster:
             "selected_model": best_model_name,
             "benchmark_models": {
                 "SARIMA": {
-                    "forecast_30d": sarima_forecast_30,
-                    "forecast_90d": sarima_forecast_90,
+                    "forecast_7d": sarima_forecasts.get(7),
+                    "forecast_14d": sarima_forecasts.get(14),
+                    "forecast_30d": sarima_forecasts.get(30),
+                    "forecast_60d": sarima_forecasts.get(60),
+                    "forecast_90d": sarima_forecasts.get(90),
                     "validation_mae": sarima_mae,
                 },
                 "XGBoost": {
-                    "forecast_30d": f_30,
-                    "forecast_90d": f_90,
+                    "forecast_7d": xgb_forecasts.get("forecast_7d", {}).get("rate"),
+                    "forecast_14d": xgb_forecasts.get("forecast_14d", {}).get("rate"),
+                    "forecast_30d": xgb_forecasts.get("forecast_30d", {}).get("rate"),
+                    "forecast_60d": xgb_forecasts.get("forecast_60d", {}).get("rate"),
+                    "forecast_90d": xgb_forecasts.get("forecast_90d", {}).get("rate"),
                     "validation_mae": xgb_mae,
                 }
             },

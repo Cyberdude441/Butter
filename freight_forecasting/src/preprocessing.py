@@ -35,8 +35,10 @@ class DataPreprocessor:
         for col in self.num_columns:
             if col in df.columns:
                 df[col] = pd.to_numeric(df[col], errors="coerce")
-                # Group-wise forward-fill, then backfill to prevent future-data leakage
-                df[col] = df.groupby(group_cols)[col].ffill().bfill()
+                # STRICTLY PAST-ONLY IMPUTATION:
+                # forward-fill within each route/vessel series.
+                # Backfill would use future observations and cause leakage.
+                df[col] = df.groupby(group_cols)[col].ffill()
                 
         # Remove impossible/negative values
         if "historical_freight_rate" in df.columns:

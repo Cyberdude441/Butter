@@ -105,7 +105,10 @@ def walk_forward_validation_xgb(
                 "MAPE": round(float(np.mean([f["MAPE"] for f in folds])), 2),
             }
         else:
-            summary[h] = {"MAE": 0.0, "RMSE": 0.0, "MAPE": 0.0}
+            raise RuntimeError(
+                f"XGBoost walk-forward validation produced no valid "
+                f"folds for the {h}-day horizon."
+            )
             
     return summary
 
@@ -160,6 +163,9 @@ def walk_forward_validation_sarima(
                 "MAPE": round(float(np.mean([f["MAPE"] for f in folds])), 2),
             }
         else:
-            summary[h] = {"MAE": 0.0, "RMSE": 0.0, "MAPE": 0.0}
+            raise RuntimeError(
+                f"SARIMA walk-forward validation produced no valid "
+                f"results for the {h}-day horizon."
+            )
             
     return summary
