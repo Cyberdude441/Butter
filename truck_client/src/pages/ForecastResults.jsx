@@ -932,32 +932,9 @@ const ForecastResults = () => {
 
       {/* FREIGHT RATE TREND CHART */}
       {analysis?.rateData?.length > 0 && !loadingAnalysis && !analysisError && (
-        <section id="rate-trend" className="py-5">
-          <div className="container py-4">
-            <div className="text-center mb-4">
-              <small
-                className="text-uppercase fw-bold tracking-wider"
-                style={{ color: "#38bdf8", fontSize: "0.75rem" }}
-              >
-                FREIGHT RATE TREND
-              </small>
-
-              <h2 className="fw-bold mt-2 text-white">
-                Historical & Projected Rates
-              </h2>
-            </div>
-
-            <div
-              className="card border-0 rounded-4 p-3"
-              style={{
-                backgroundColor: "#0b1320",
-                border: "1px solid #162234",
-              }}
-            >
-              <div className="card-body p-4">
-                <RateChart data={analysis.rateData} />
-              </div>
-            </div>
+        <section id="rate-trend" className="py-4">
+          <div className="container py-2">
+            <RateChart data={analysis.rateData} />
           </div>
         </section>
       )}

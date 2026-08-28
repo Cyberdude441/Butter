@@ -242,21 +242,31 @@ class FreightForecaster:
             last_row, baseline_means, feature_importances, top_k=5
         )
 
-        # 9. Time-series Rate Projection Data for Frontend Chart
-        last_dt = pd.to_datetime(current_date)
-        future_points = []
-        for h in [7, 14, 30, 60, 90]:
-            h_dt = last_dt + pd.Timedelta(days=h)
-            h_data = active_forecast_dict.get(f"forecast_{h}d", {})
-            future_points.append({
-                "day": f"+{h}d",
-                "date": str(h_dt.date()),
-                "month": h_dt.strftime("%b %Y"),
-                "historicalRate": round(current_rate, 2),
-                "projectedRate": h_data.get("rate", current_rate),
-                "lowerBound": h_data.get("lower", current_rate * 0.95),
-                "upperBound": h_data.get("upper", current_rate * 1.05),
-            })
+        # 9. Time-series Rate Projection Data for Frontend Chart (-3M, -2M, -1M, Current, +1M, +2M, +3M)
+        def get_hist_rate(days_back: int, default_factor: float) -> float:
+            if len(route_df) >= days_back:
+                val = float(route_df["historical_freight_rate"].iloc[-days_back])
+                if np.isfinite(val) and val > 0:
+                    return round(val, 2)
+            return round(current_rate * default_factor, 2)
+
+        r_m3 = get_hist_rate(90, 0.97)
+        r_m2 = get_hist_rate(60, 0.985)
+        r_m1 = get_hist_rate(30, 0.99)
+        r_curr = round(current_rate, 2)
+        r_p1 = float(active_forecast_dict.get("forecast_30d", {}).get("rate", current_rate))
+        r_p2 = float(active_forecast_dict.get("forecast_60d", {}).get("rate", current_rate))
+        r_p3 = float(active_forecast_dict.get("forecast_90d", {}).get("rate", current_rate))
+
+        future_points = [
+            {"month": "-3 Months", "label": "-3 Months", "historicalRate": r_m3, "projectedRate": None},
+            {"month": "-2 Months", "label": "-2 Months", "historicalRate": r_m2, "projectedRate": None},
+            {"month": "-1 Month", "label": "-1 Month", "historicalRate": r_m1, "projectedRate": None},
+            {"month": "Current", "label": "Current", "historicalRate": r_curr, "projectedRate": r_curr},
+            {"month": "+1 Month", "label": "+1 Month", "historicalRate": None, "projectedRate": r_p1},
+            {"month": "+2 Months", "label": "+2 Months", "historicalRate": None, "projectedRate": r_p2},
+            {"month": "+3 Months", "label": "+3 Months", "historicalRate": None, "projectedRate": r_p3},
+        ]
 
         lower_bound = active_forecast_dict.get(f"forecast_{horizon_days}d", {}).get("lower", round(selected_pred * 0.95, 2))
         upper_bound = active_forecast_dict.get(f"forecast_{horizon_days}d", {}).get("upper", round(selected_pred * 1.05, 2))
