@@ -4,25 +4,11 @@ import { generateForecastExplanation } from "../services/geminiService.js";
 
 export const createForecast = async (req, res) => {
   try {
-    const {
-      origin,
-      destination,
-      vesselType,
-      cargoQuantity,
-      forecastPeriod,
-    } = req.body;
-
-    if (
-      !origin ||
-      !destination ||
-      !vesselType ||
-      !cargoQuantity ||
-      !forecastPeriod
-    ) {
-      return res.status(400).json({
-        message: "All forecast fields are required.",
-      });
-    }
+    const origin = req.body.origin || "Australia";
+    const destination = req.body.destination || "Paradip";
+    const vesselType = req.body.vesselType || req.body.vessel_type || "Panamax";
+    const cargoQuantity = req.body.cargoQuantity || req.body.cargo_quantity || 75000;
+    const forecastPeriod = req.body.forecastPeriod || req.body.forecast_horizon || "Next 30 Days";
 
     const portAnalysis = analyzePorts(vesselType);
 
