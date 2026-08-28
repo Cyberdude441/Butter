@@ -158,7 +158,8 @@ class FreightForecaster:
             feature_importances = {"bunker_price": 0.35, "route_distance": 0.25, "demand_index": 0.15}
 
         # 2. SARIMA Forecasts across all horizons (Baseline Comparison)
-        series = route_df.set_index("date")["historical_freight_rate"].asfreq("D").interpolate(method="linear")
+        dedup_series = route_df.groupby("date")["historical_freight_rate"].mean()
+        series = dedup_series.asfreq("D").interpolate(method="linear")
         sarima = SarimaModel()
         sarima_forecasts: Dict[int, float] = {h: round(current_rate, 2) for h in HORIZONS}
         sarima_bounds: Dict[int, Dict[str, float]] = {}
