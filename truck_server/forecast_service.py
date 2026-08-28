@@ -34,12 +34,18 @@ def make_response(payload: dict) -> dict:
     f90 = res.get("forecast_details", {}).get("forecast_90d", {})
 
     return {
+        "origin": res["origin"],
+        "destination": res["destination"],
+        "vessel_type": res["vessel_type"],
+        "vesselType": res["vessel_type"],
         "model": res["selected_model"],
         "modelScores": {
             "SARIMA": res["benchmark_models"]["SARIMA"]["validation_mae"],
             "XGBoost": res["benchmark_models"]["XGBoost"]["validation_mae"],
         },
         "latestRate": res["current_freight_rate"],
+        "predictedRate": res["predicted_freight_rate"],
+        "forecastHorizonDays": res["forecast_horizon_days"],
         "forecast30Day": {
             "rate": f30.get("rate", res["predicted_freight_rate"]),
             "lower": f30.get("lower", res["predicted_freight_rate"] * 0.95),
@@ -55,9 +61,17 @@ def make_response(payload: dict) -> dict:
         "marketSignal": res["market_signal"],
         "market_signal": res["market_signal"],
         "reason": res["reason"],
+        "summary": res.get("summary", res["reason"]),
         "charterAdvice": res["reason"],
+        "charter_strategy": res["charter_strategy"],
         "rateData": res["rateData"],
         "topDrivers": res["top_drivers"],
+        "market_intelligence": res.get("market_intelligence"),
+        "marketIntelligence": res.get("market_intelligence"),
+        "port_analysis": res.get("port_analysis"),
+        "portAnalysis": res.get("port_analysis"),
+        "optimal_port": res.get("optimal_port"),
+        "optimalPort": res.get("optimal_port"),
         "dataStatus": res["data_status"],
         "trainingObservations": len(FORECASTER.dataset) if FORECASTER.dataset is not None else 25000,
         "benchmark": {

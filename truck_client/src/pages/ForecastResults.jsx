@@ -21,11 +21,18 @@ const vesselImages = {
 // Approximate representative export-hub coordinates per origin country
 // (adjust these to the actual load ports you care about)
 const ORIGIN_COORDINATES = {
-  Australia: { lat: -20.3115, lng: 118.6069, label: "Port Hedland, Australia" },
-  "United States": { lat: 29.7604, lng: -95.3698, label: "Houston, USA" },
-  Mozambique: { lat: -23.8654, lng: 35.3833, label: "Maputo, Mozambique" },
-  Russia: { lat: 43.1056, lng: 131.8735, label: "Vladivostok, Russia" },
-  Indonesia: { lat: -3.3194, lng: 114.5908, label: "Banjarmasin, Indonesia" },
+  Australia: { lat: -32.9267, lng: 151.7817, label: "Newcastle (Port of Newcastle), Australia" },
+  "Newcastle (Port of Newcastle), Australia": { lat: -32.9267, lng: 151.7817, label: "Newcastle (Port of Newcastle), Australia" },
+  "Gladstone, Australia": { lat: -23.8427, lng: 151.2555, label: "Gladstone, Australia" },
+  "United States": { lat: 36.9472, lng: -76.3283, label: "Hampton Roads/Norfolk, USA" },
+  "Hampton Roads/Norfolk, USA": { lat: 36.9472, lng: -76.3283, label: "Hampton Roads/Norfolk, USA" },
+  "Baltimore, USA": { lat: 39.2904, lng: -76.6122, label: "Baltimore, USA" },
+  Mozambique: { lat: -14.5428, lng: 40.6728, label: "Nacala, Mozambique" },
+  "Nacala, Mozambique": { lat: -14.5428, lng: 40.6728, label: "Nacala, Mozambique" },
+  Russia: { lat: 42.7333, lng: 133.0833, label: "Vostochny, Russia" },
+  "Vostochny, Russia": { lat: 42.7333, lng: 133.0833, label: "Vostochny, Russia" },
+  Indonesia: { lat: -3.7000, lng: 114.4667, label: "Taboneo Anchorage (S. Kalimantan), Indonesia" },
+  "Taboneo Anchorage (S. Kalimantan), Indonesia": { lat: -3.7000, lng: 114.4667, label: "Taboneo Anchorage (S. Kalimantan), Indonesia" },
 };
 
 // Coordinates for the East Coast India ports, keyed by port.id from Ports.jsx
@@ -348,7 +355,7 @@ const ForecastResults = () => {
                     border: "1px solid #162234",
                   }}
                 >
-                  {origin}
+                  {analysis?.origin || origin}
                 </span>
 
                 <span className="fw-bold" style={{ color: "#38bdf8" }}>
@@ -363,7 +370,7 @@ const ForecastResults = () => {
                     border: "1px solid #162234",
                   }}
                 >
-                  {destination}
+                  {analysis?.destination || destination}
                 </span>
 
                 <span
@@ -629,6 +636,223 @@ const ForecastResults = () => {
                 </div>
               </div>
 
+              {/* MARKET & PORT INTELLIGENCE CARDS */}
+              {analysis && (analysis.market_intelligence || analysis.forecast?.market_intelligence) && (
+                <div className="mt-4">
+                  <div className="d-flex align-items-center justify-content-between mb-3">
+                    <div>
+                      <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#38bdf8", fontSize: "0.75rem" }}>
+                        LIVE MARKET & PORT INDICATORS
+                      </small>
+                      <h4 className="fw-bold mt-1 mb-0 text-white">Market & Port Intelligence</h4>
+                    </div>
+                  </div>
+
+                  <div className="row g-4">
+                    {/* 1. Demand Card */}
+                    <div className="col-md-3">
+                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                        <div className="card-body p-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fs-3">📊</span>
+                            <span className={`badge px-2 py-1 ${(analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "High" ? "bg-success text-white" : (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "Low" ? "bg-danger text-white" : "bg-info text-dark"}`}>
+                              {analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status || "Normal"}
+                            </span>
+                          </div>
+                          <small style={{ color: "#8492a6" }}>Cargo Demand</small>
+                          <h4 className="fw-bold mt-1 text-white mb-0">
+                            {analysis.market_intelligence?.demand_index || analysis.forecast?.market_intelligence?.demand_index || "100.1"} <span className="fs-6 text-muted fw-normal">Index</span>
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 2. Vessel Supply Card */}
+                    <div className="col-md-3">
+                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                        <div className="card-body p-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fs-3">🚢</span>
+                            <span className={`badge px-2 py-1 ${(analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Tight" ? "bg-warning text-dark" : (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Excess" ? "bg-primary text-white" : "bg-info text-dark"}`}>
+                              {analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status || "Balanced"}
+                            </span>
+                          </div>
+                          <small style={{ color: "#8492a6" }}>Vessel Supply</small>
+                          <h4 className="fw-bold mt-1 text-white mb-0">
+                            {analysis.market_intelligence?.vessel_supply_index || analysis.forecast?.market_intelligence?.vessel_supply_index || "100.4"} <span className="fs-6 text-muted fw-normal">Index</span>
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 3. Port Congestion Card */}
+                    <div className="col-md-3">
+                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                        <div className="card-body p-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fs-3">⚓</span>
+                            <span className={`badge px-2 py-1 ${(analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "Low" ? "bg-success text-white" : (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "High" ? "bg-danger text-white" : "bg-warning text-dark"}`}>
+                              {analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level || "Medium"}
+                            </span>
+                          </div>
+                          <small style={{ color: "#8492a6" }}>Port Congestion</small>
+                          <h4 className="fw-bold mt-1 text-white mb-0">
+                            {analysis.port_analysis?.congestion_index || analysis.forecast?.port_analysis?.congestion_index || "35.2"} <span className="fs-6 text-muted fw-normal">Score</span>
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* 4. Estimated Delay Card */}
+                    <div className="col-md-3">
+                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                        <div className="card-body p-3">
+                          <div className="d-flex justify-content-between align-items-center mb-2">
+                            <span className="fs-3">⏱️</span>
+                            <span className={`badge px-2 py-1 ${(analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "Low" ? "bg-success text-white" : (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "High" ? "bg-danger text-white" : "bg-warning text-dark"}`}>
+                              {analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level || "Medium"} Delay
+                            </span>
+                          </div>
+                          <small style={{ color: "#8492a6" }}>Estimated Wait Time</small>
+                          <h4 className="fw-bold mt-1 text-white mb-0">
+                            ~{analysis.port_analysis?.estimated_delay_days || analysis.forecast?.port_analysis?.estimated_delay_days || "2.2"} <span className="fs-6 text-muted fw-normal">Days</span>
+                          </h4>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* OPTIMAL PORT RECOMMENDATION ENGINE */}
+              {analysis && (analysis.optimal_port || analysis.forecast?.optimal_port) && (() => {
+                const opt = analysis.optimal_port || analysis.forecast?.optimal_port;
+                const isOptimal = opt.recommendation_type === "Keep Selected Port" || opt.recommended_port === opt.selected_port;
+
+                return (
+                  <div className="card border-0 rounded-4 mt-4 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                    <div className="card-body p-4 p-md-5">
+                      <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+                        <div>
+                          <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#38bdf8", fontSize: "0.75rem" }}>
+                            PORT OPTIMIZATION & DISCHARGE ADVICE
+                          </small>
+                          <h3 className="fw-bold mt-1 text-white mb-0">
+                            🏆 Optimal Discharge Port Recommendation
+                          </h3>
+                        </div>
+                        <span className={`badge rounded-pill px-3 py-2 fs-6 fw-semibold ${isOptimal ? "bg-success text-white" : "bg-warning text-dark"}`}>
+                          {opt.recommendation_type}
+                        </span>
+                      </div>
+
+                      {/* Highlight Recommendation Card */}
+                      <div className="p-4 rounded-3 mb-4" style={{ backgroundColor: "#0b1320", border: `1px solid ${isOptimal ? "#064e3b" : "#b45309"}` }}>
+                        <div className="row align-items-center g-3">
+                          <div className="col-lg-8">
+                            <div className="d-flex align-items-center gap-3 mb-2">
+                              <span className="fs-2">🎯</span>
+                              <div>
+                                <h4 className="fw-bold text-white mb-0">
+                                  Recommended: <span style={{ color: "#38bdf8" }}>{opt.recommended_port}</span>
+                                </h4>
+                                <small style={{ color: "#8492a6" }}>
+                                  Selected Query Port: <strong className="text-white">{opt.selected_port}</strong>
+                                </small>
+                              </div>
+                            </div>
+                            <p className="mt-2 mb-2 text-white-50" style={{ lineHeight: "1.6" }}>
+                              {opt.reason}
+                            </p>
+                            <div className="d-flex align-items-center gap-2 mt-2">
+                              <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
+                                ⚡ Operational Benefit: {opt.expected_operational_benefit}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="col-lg-4 text-lg-end">
+                            <div className="p-3 rounded-3" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                              <small className="text-muted d-block">Optimization Score</small>
+                              <h2 className="fw-bold text-white mb-1" style={{ color: "#38bdf8" }}>
+                                {opt.optimization_score} <span className="fs-6 text-muted fw-normal">/ 100</span>
+                              </h2>
+                              <small className="text-info">
+                                Est. Delay: ~{opt.estimated_delay_days}d ({opt.congestion_level} Congestion)
+                              </small>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Multi-Factor Port Ranking Table */}
+                      {opt.ranked_alternatives?.length > 0 && (
+                        <div>
+                          <h5 className="fw-bold text-white mb-3">Multi-Factor Alternative Port Rankings</h5>
+                          <div className="table-responsive">
+                            <table className="table table-dark table-hover align-middle mb-0" style={{ backgroundColor: "#070d18" }}>
+                              <thead>
+                                <tr style={{ borderBottom: "1px solid #162234", color: "#8492a6" }}>
+                                  <th>Rank</th>
+                                  <th>Port Name</th>
+                                  <th>Suitability Status</th>
+                                  <th>Congestion Index</th>
+                                  <th>Est. Delay</th>
+                                  <th>Score</th>
+                                  <th>Operational Notes</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {opt.ranked_alternatives.map((alt) => {
+                                  const isRec = alt.port === opt.recommended_port;
+                                  const isSel = alt.is_selected;
+                                  return (
+                                    <tr key={alt.port} style={{
+                                      backgroundColor: isRec ? "#064e3b15" : isSel ? "#1e88e515" : "transparent",
+                                      borderBottom: "1px solid #162234"
+                                    }}>
+                                      <td>
+                                        <span className={`fw-bold ${isRec ? "text-warning" : "text-white"}`}>
+                                          {isRec ? "🥇 #1" : `#${alt.rank}`}
+                                        </span>
+                                      </td>
+                                      <td>
+                                        <span className="fw-semibold text-white">{alt.port}</span>
+                                        {isRec && <span className="badge bg-warning text-dark ms-2">Recommended</span>}
+                                        {isSel && <span className="badge bg-info text-dark ms-2">Selected</span>}
+                                      </td>
+                                      <td>
+                                        <span className={`badge px-2 py-1 ${
+                                          alt.status === "compatible" ? "bg-success text-white" :
+                                          alt.status === "special" ? "bg-warning text-dark" : "bg-danger text-white"
+                                        }`}>
+                                          {alt.status === "compatible" ? "Compatible" : alt.status === "special" ? "STS Lightering" : "Restricted"}
+                                        </span>
+                                      </td>
+                                      <td>
+                                        <span className={alt.congestion_level === "Low" ? "text-success" : alt.congestion_level === "High" ? "text-danger" : "text-warning"}>
+                                          {alt.congestion_index} ({alt.congestion_level})
+                                        </span>
+                                      </td>
+                                      <td>~{alt.estimated_delay_days} days</td>
+                                      <td>
+                                        <strong className="text-white">{alt.optimization_score}</strong>
+                                      </td>
+                                      <td className="small" style={{ color: "#8492a6", maxWidth: "320px" }}>
+                                        {alt.reason}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })()}
+
               <div
                 className="card border-0 rounded-4 mt-4 p-2"
                 style={{
@@ -649,7 +873,7 @@ const ForecastResults = () => {
                   </h4>
 
                   <p className="mt-3 mb-0" style={{ color: "#8492a6", lineHeight: "1.7" }}>
-                    {analysis.forecast?.reasoning}
+                    {analysis.forecast?.summary || analysis.forecast?.reasoning}
                   </p>
 
                   {analysis.forecast?.keyFactors?.length > 0 && (

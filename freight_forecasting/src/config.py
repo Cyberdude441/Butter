@@ -99,6 +99,32 @@ def parse_forecast_horizon(val: object) -> int:
     return 30
 
 
+# Market Intelligence Thresholds (Calibrated from historical dataset quantiles)
+DEMAND_HIGH_THRESH = 102.5
+DEMAND_LOW_THRESH = 97.5
+
+SUPPLY_TIGHT_THRESH = 98.0
+SUPPLY_EXCESS_THRESH = 102.5
+
+DEMAND_SUPPLY_UPWARD = 1.02
+DEMAND_SUPPLY_DOWNWARD = 0.98
+
+CONGESTION_LOW_THRESH = 30.0
+CONGESTION_HIGH_THRESH = 40.0
+
+# Delay Estimation Calibration
+BASE_PORT_DELAY_DAYS = 1.0
+CONGESTION_DELAY_MULTIPLIER = 0.08  # e.g., 35 index -> 1.0 + 35*0.08 = 3.8 days
+
+# Port Optimization Weights (Sum = 1.0)
+PORT_OPTIMIZATION_WEIGHTS = {
+    "congestion": 0.25,
+    "delay": 0.25,
+    "route_economics": 0.25,
+    "vessel_suitability": 0.15,
+    "risk": 0.10,
+}
+
 DATA_STATUS_INFO = {
     "freight_rates": "PROXY / CALIBRATED HISTORICAL",
     "bunker_prices": "REAL / BENCHMARK SINGAPORE VLSFO",

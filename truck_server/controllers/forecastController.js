@@ -28,14 +28,20 @@ export const createForecast = async (req, res) => {
     }
 
     const forecast = {
-      predictedRate: modelForecast.forecast30Day.rate,
+      origin: modelForecast.origin || origin,
+      destination: modelForecast.destination || destination,
+      vesselType: modelForecast.vessel_type || vesselType,
+      latestRate: modelForecast.latestRate || modelForecast.current_freight_rate,
+      currentFreightRate: modelForecast.latestRate || modelForecast.current_freight_rate,
+      predictedRate: modelForecast.predictedRate || modelForecast.forecast30Day.rate,
       marketTrend: modelForecast.trend,
       marketSignal: modelForecast.marketSignal || modelForecast.market_signal || "WAIT",
       volatility: modelForecast.volatility || "Low",
       riskLevel: modelForecast.forecast90Day.upper - modelForecast.forecast90Day.lower > modelForecast.forecast90Day.rate * 0.25 ? "High" : "Medium",
-      estimatedRate: modelForecast.forecast30Day.rate,
+      estimatedRate: modelForecast.predictedRate || modelForecast.forecast30Day.rate,
       rateUnit: "USD/MT",
       charterAdvice: modelForecast.reason || explanation,
+      summary: modelForecast.summary || modelForecast.reason || explanation,
       reasoning: modelForecast.reason || explanation,
       keyFactors: [
         `${modelForecast.model} selected from route-vessel validation (MAE $${modelForecast.modelScores?.SARIMA ?? 0.45}/tonne).`,
@@ -43,6 +49,12 @@ export const createForecast = async (req, res) => {
         `90-day range: $${modelForecast.forecast90Day.lower}-$${modelForecast.forecast90Day.upper}/tonne.`,
       ],
       topDrivers: modelForecast.topDrivers || [],
+      market_intelligence: modelForecast.market_intelligence || modelForecast.marketIntelligence,
+      marketIntelligence: modelForecast.market_intelligence || modelForecast.marketIntelligence,
+      port_analysis: modelForecast.port_analysis || modelForecast.portAnalysis,
+      portAnalysis: modelForecast.port_analysis || modelForecast.portAnalysis,
+      optimal_port: modelForecast.optimal_port || modelForecast.optimalPort,
+      optimalPort: modelForecast.optimal_port || modelForecast.optimalPort,
       dataStatus: modelForecast.dataStatus || {},
       rateData: modelForecast.rateData,
       model: modelForecast.model,
@@ -55,12 +67,15 @@ export const createForecast = async (req, res) => {
 
     res.json({
       query: {
-        origin,
-        destination,
+        origin: modelForecast.origin || origin,
+        destination: modelForecast.destination || destination,
         vesselType,
         cargoQuantity,
         forecastPeriod,
       },
+
+      origin: modelForecast.origin || origin,
+      destination: modelForecast.destination || destination,
 
       vessel: portAnalysis.vessel,
 
@@ -72,6 +87,13 @@ export const createForecast = async (req, res) => {
       },
 
       forecast,
+
+      market_intelligence: forecast.market_intelligence,
+      marketIntelligence: forecast.marketIntelligence,
+      port_analysis: forecast.port_analysis,
+      portAnalysis: forecast.portAnalysis,
+      optimal_port: forecast.optimal_port,
+      optimalPort: forecast.optimalPort,
 
       rateData: forecast.rateData || [],
     });

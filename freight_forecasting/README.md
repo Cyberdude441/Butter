@@ -1,103 +1,150 @@
-# Bulk Freight Rate Forecasting & Vessel Charter ML Backend
+# Bulk Freight Rate Forecasting & Port Optimization ML Engine
 
-An end-to-end Machine Learning forecasting pipeline and FastAPI backend for the **AI-powered Bulk Freight Forecasting and Vessel Charter Optimization System**.
+An end-to-end Machine Learning forecasting, market intelligence, port congestion analysis, delay estimation, and optimal discharge port recommendation system.
+
+---
 
 ## 1. Overview
-The model predicts future dry bulk ocean freight rates (USD/MT) across 5 primary forecasting horizons:
+The system predicts future dry bulk ocean freight rates (USD/MT) across 5 primary forecasting horizons:
 - **7 Days** ($T+7$)
 - **14 Days** ($T+14$)
 - **30 Days** ($T+30$)
 - **60 Days** ($T+60$)
 - **90 Days** ($T+90$)
 
-It incorporates macroeconomic, commodity, port congestion, fleet supply, and voyage route characteristics to yield accurate forecasts, empirical uncertainty intervals, trend classifications, volatility regimes, and tactical chartering recommendations.
+It layers a multi-horizon forecasting core with an operational decision support and port optimization suite:
+1. **Multi-Horizon ML Forecasting**: Dynamic auto-selection between SARIMA and Multi-Horizon XGBoost based on walk-forward out-of-sample validation metrics.
+2. **Market Intelligence Engine**: Quantile-calibrated indicators for cargo demand, fleet supply tightness, demand/supply ratios, and market pricing pressure.
+3. **Port Congestion & Delay Engine**: Port-specific congestion index and vessel-calibrated operational waiting times (pilotage, queueing, and berthing).
+4. **Port Optimization & Alternative Ranking**: Evaluates physical berth compatibility (draft, LOA, beam, DWT), voyage transit efficiency, congestion scores, delay impacts, and operational risk.
 
 ---
 
-## 2. Input Features & Target Variables
+## 2. Input Features & Data Sources
 
-### Inputs
-- **Categorical**: `origin_port`, `destination_port`, `vessel_type`, `season`
-- **Numerical**: `historical_freight_rate`, `bunker_price`, `coal_price`, `demand_index`, `vessel_supply_index`, `port_congestion_index`, `route_distance`, `usd_inr`, `oil_price`
-- **Engineered Time-Series**: Lags (`1d`, `7d`, `14d`, `30d`), Rolling means (`7d`, `14d`, `30d`), Rolling standard deviations (`7d`, `30d`), rate changes (`1d`, `7d`), cyclical harmonics (`month_sin`, `month_cos`).
-
-### Targets
-- `future_freight_rate_usd_per_mt` across $H \in \{7, 14, 30, 60, 90\}$ days.
-
----
-
-## 3. Model Architecture & Comparison
-
-1. **Baseline Model — SARIMA**: Captures autoregressive lag dynamics, non-seasonal/seasonal differencing, and moving averages on univariate series.
-2. **Primary Model — Multi-Horizon XGBoost**: Uses gradient boosted decision trees trained with point-in-time engineered features to predict each horizon independently.
-3. **Walk-Forward Validation**: Evaluated strictly chronologically on rolling out-of-sample test splits to eliminate future data leakage.
-
-| Horizon | SARIMA MAE ($/MT) | SARIMA MAPE (%) | XGBoost MAE ($/MT) | XGBoost MAPE (%) |
-| :--- | :--- | :--- | :--- | :--- |
-| **7 Days** | ~0.38 | ~1.8% | **~0.18** | **~0.9%** |
-| **14 Days** | ~0.52 | ~2.5% | **~0.25** | **~1.2%** |
-| **30 Days** | ~0.78 | ~3.8% | **~0.39** | **~1.9%** |
-| **60 Days** | ~1.12 | ~5.4% | **~0.61** | **~2.9%** |
-| **90 Days** | ~1.45 | ~6.9% | **~0.82** | **~3.9%** |
+| Feature Category | Variables | Data Type / Source |
+| :--- | :--- | :--- |
+| **Route & Categoricals** | `origin_port`, `destination_port`, `vessel_type`, `season` | Real / Baltic Exchange Specs |
+| **Commodity & Macro** | `bunker_price` (VLSFO), `coal_price` (Newcastle), `oil_price` (Brent), `usd_inr` | Real / World Bank & Singapore Benchmark |
+| **Market Indicators** | `cargo_demand_index`, `vessel_supply_index`, `port_congestion_index` | Calibrated / Sagar Unnati Port Benchmark |
+| **Voyage Routing** | `route_distance` (nautical miles), `estimated_sailing_days` | Haversine + Marine Circuity Factors |
 
 ---
 
-## 4. Decision Support Layer
+## 3. Market Intelligence Engine (`market_intelligence.py`)
 
-1. **Trend Prediction**:
-   - `Increasing` ($> +1.5\%$)
-   - `Decreasing` ($< -1.5\%$)
-   - `Stable`
-2. **Market Volatility**:
-   - `Low` ($< 5\%$)
-   - `Medium` ($5\% - 12\%$)
-   - `High` ($> 12\%$)
-3. **Market Entry Signal**:
-   - `WAIT`: When freight rates are in downward trajectory.
-   - `CHARTER NOW`: When rates are expected to increase significantly.
-   - `MONITOR / SPLIT-BOOK`: When volatility is elevated or rates are steady.
+Derives real-time market regimes based on historical feature distributions:
+- **Demand Index**:
+  - `High`: $> 102.5$
+  - `Low`: $< 97.5$
+  - `Normal`: $97.5 - 102.5$
+- **Vessel Supply Index**:
+  - `Tight`: $< 98.0$ (constrained fleet availability)
+  - `Excess`: $> 102.5$ (oversupplied tonnage)
+  - `Balanced`: $98.0 - 102.5$
+- **Demand-Supply Ratio & Market Pressure**:
+  - `Upward`: Ratio $> 1.02$
+  - `Downward`: Ratio $< 0.98$
+  - `Neutral`: $0.98 - 1.02$
 
 ---
 
-## 5. API Endpoints
+## 4. Port Congestion & Delay Engine (`port_optimizer.py`)
 
-### Run FastAPI Service
+Calculates operational waiting times (days) using observed/calibrated congestion metrics and vessel characteristics:
+
+$$\text{Estimated Delay (Days)} = \text{Base Delay} + \left(\frac{\text{Congestion Index}}{100} \times 3.5\right) + \text{Vessel Factor}$$
+
+- **Vessel Factor**: Capesize ($+0.6\text{d}$ for deep-draft tidal window), Panamax ($+0.3\text{d}$), Supramax/Handysize ($0.0\text{d}$).
+- **Congestion Level**: `Low` ($< 35$), `Medium` ($35 - 55$), `High` ($> 55$).
+- **Delay Level**: `Low` ($\le 2.2\text{d}$), `Medium` ($2.2 - 3.8\text{d}$), `High` ($> 3.8\text{d}$).
+
+---
+
+## 5. Port Optimization & Multi-Factor Ranking
+
+Evaluates all candidate East Coast India discharge ports (*Paradip, Visakhapatnam, Gangavaram, Gopalpur, Dhamra, Haldia, Sagar/Sandheads*):
+
+$$\text{Port Optimization Score} = \sum (w_i \times S_i)$$
+
+### Configurable Weights (`config.py`):
+```python
+PORT_OPTIMIZATION_WEIGHTS = {
+    "congestion": 0.25,          # Lower port congestion index
+    "delay": 0.25,               # Shorter operational turnaround delay
+    "route_economics": 0.25,     # Voyage distance and freight rate efficiency
+    "vessel_suitability": 0.15,  # Berth draft clearance vs vessel draft limit
+    "risk": 0.10,                # Lock gate constraints / weather exposure
+}
+```
+
+### Recommendation Logic:
+- If selected port is top-ranked $\rightarrow$ `Keep Selected Port`
+- If an alternative port provides lower congestion and turnaround savings $\rightarrow$ `Consider Alternative Port` with quantified delay savings (`expected_delay_difference_days` and `expected_operational_benefit`).
+
+---
+
+## 6. API Endpoints
+
+### FastAPI ML Backend
 ```bash
 uvicorn freight_forecasting.api.main:app --host 0.0.0.0 --port 8000
 ```
 
 ### POST `/predict`
-**Request:**
+**Request Payload:**
 ```json
 {
   "origin": "Australia",
   "destination": "Paradip",
   "vessel_type": "Panamax",
-  "forecast_horizon": 30
+  "forecast_horizon": 30,
+  "cargo_quantity": 75000
 }
 ```
 
-**Response:**
+**Response Payload:**
 ```json
 {
-  "current_freight_rate": 18.5,
-  "predicted_freight_rate": 16.9,
-  "forecast_7d": 18.1,
-  "forecast_14d": 17.6,
-  "forecast_30d": 16.9,
-  "forecast_60d": 17.4,
-  "forecast_90d": 19.0,
-  "forecast_lower_bound": 16.2,
-  "forecast_upper_bound": 17.6,
-  "trend": "Decreasing",
-  "volatility": "Medium",
-  "market_signal": "WAIT",
-  "reason": "Forecast indicates decreasing freight rates (projected drop from $18.50 to $16.90/MT in 30 days)..."
+  "origin": "Newcastle (Port of Newcastle), Australia",
+  "destination": "Paradip, India",
+  "vessel_type": "Panamax",
+  "current_freight_rate": 21.74,
+  "predicted_freight_rate": 21.83,
+  "forecast_horizon_days": 30,
+  "forecast_30d": 21.83,
+  "forecast_90d": 20.00,
+  "forecast_lower_bound": 21.21,
+  "forecast_upper_bound": 22.45,
+  "trend": "Stable",
+  "volatility": "Low",
+  "market_signal": "MONITOR",
+  "selected_model": "SARIMA",
+  "market_intelligence": {
+    "demand_index": 100.1,
+    "demand_status": "Normal",
+    "vessel_supply_index": 100.4,
+    "supply_status": "Balanced",
+    "demand_supply_ratio": 1.0,
+    "market_pressure": "Neutral"
+  },
+  "port_analysis": {
+    "selected_port": "Paradip",
+    "congestion_index": 38.5,
+    "congestion_level": "Medium",
+    "estimated_delay_days": 2.6,
+    "delay_level": "Medium",
+    "data_source_status": "calibrated_proxy"
+  },
+  "optimal_port": {
+    "recommended_port": "Paradip",
+    "selected_port": "Paradip",
+    "recommendation_type": "Keep Selected Port",
+    "optimization_score": 88.5,
+    "estimated_delay_days": 2.6,
+    "congestion_level": "Medium",
+    "expected_operational_benefit": "Direct discharge berth with lowest total voyage turnaround",
+    "ranked_alternatives": [ ... ]
+  }
 }
 ```
-
----
-
-## 6. Synthetic & Proxy Data Methodology
-- **Real Market Proxies**: Newcastle thermal coal (World Bank), Singapore VLSFO bunker prices, major-port AIS waiting times (Sagar Unnati).
-- **Calibrated Fixtures**: Route freight series calibrated against historical Baltic Panamax/Capesize freight indices with simulated operational volatility.
