@@ -9,6 +9,7 @@ from .config import (
     MODELS_DIR,
     HORIZONS,
     DATA_STATUS_INFO,
+    parse_forecast_horizon,
 )
 from .data_loader import (
     load_freight_dataset,
@@ -97,10 +98,11 @@ class FreightForecaster:
         origin: str = "Australia",
         destination: str = "Paradip",
         vessel_type: str = "Panamax",
-        forecast_horizon: int = 30,
+        forecast_horizon: object = 30,
     ) -> Dict[str, Any]:
         """Execute end-to-end multi-horizon forecast with explainability & decision layer."""
-        route_df = self.select_route_series(origin, destination, vessel_type)
+        horizon_days = parse_forecast_horizon(forecast_horizon)
+        route_df = self.select_route_series(origin or "Australia", destination or "Paradip", vessel_type or "Panamax")
         if len(route_df) < 14:
             raise ValueError(f"Insufficient historical data ({len(route_df)} points) for requested route.")
             
@@ -163,7 +165,7 @@ class FreightForecaster:
         xgb_mae = self.comparison_metrics.get(
             "XGBoost", {}
         ).get(
-            str(forecast_horizon), {}
+            str(horizon_days), {}
         ).get(
             "MAE", float("inf")
         )
@@ -171,7 +173,7 @@ class FreightForecaster:
         sarima_mae = self.comparison_metrics.get(
             "SARIMA", {}
         ).get(
-            str(forecast_horizon), {}
+            str(horizon_days), {}
         ).get(
             "MAE", float("inf")
         )
@@ -179,12 +181,13 @@ class FreightForecaster:
         if sarima_mae < xgb_mae:
             best_model_name = "SARIMA"
             selected_pred = sarima_forecasts.get(
-                forecast_horizon,
+                horizon_days,
                 current_rate
             )
         else:
+            best_model_name = "XGBoost"
             selected_pred = xgb_forecasts.get(
-                f"forecast_{forecast_horizon}d", {}
+                f"forecast_{horizon_days}d", {}
             ).get(
                 "rate",
                 current_rate
@@ -300,15 +303,15 @@ class FreightForecaster:
             "as_of_date": current_date,
             "current_freight_rate": round(current_rate, 2),
             "predicted_freight_rate": round(selected_pred, 2),
-            "forecast_horizon_days": forecast_horizon,
+            "forecast_horizon_days": horizon_days,
             "forecast_7d": xgb_forecasts.get("forecast_7d", {}).get("rate"),
             "forecast_14d": xgb_forecasts.get("forecast_14d", {}).get("rate"),
             "forecast_30d": xgb_forecasts.get("forecast_30d", {}).get("rate"),
             "forecast_60d": xgb_forecasts.get("forecast_60d", {}).get("rate"),
             "forecast_90d": xgb_forecasts.get("forecast_90d", {}).get("rate"),
             "forecast_details": xgb_forecasts,
-            "forecast_lower_bound": xgb_forecasts.get(f"forecast_{forecast_horizon}d", {}).get("lower"),
-            "forecast_upper_bound": xgb_forecasts.get(f"forecast_{forecast_horizon}d", {}).get("upper"),
+            "forecast_lower_bound": xgb_forecasts.get(f"forecast_{horizon_days}d", {}).get("lower"),
+            "forecast_upper_bound": xgb_forecasts.get(f"forecast_{horizon_days}d", {}).get("upper"),
             "confidence_interval": "80% empirical calibrated interval",
             "trend": trend,
             "volatility": volatility,

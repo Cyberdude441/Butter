@@ -12,15 +12,16 @@ if str(PROJECT_ROOT) not in sys.path:
 
 import pandas as pd
 from freight_forecasting.src.forecast import FreightForecaster
+from freight_forecasting.src.config import parse_forecast_horizon
 
 FORECASTER = FreightForecaster()
 
 
 def make_response(payload: dict) -> dict:
-    origin = str(payload.get("origin", "Australia"))
-    destination = str(payload.get("destination", "Paradip"))
+    origin = str(payload.get("origin") or "Australia")
+    destination = str(payload.get("destination") or "Paradip")
     vessel = str(payload.get("vesselType") or payload.get("vessel_type") or "Panamax")
-    horizon = int(payload.get("forecastPeriod") or payload.get("forecast_horizon") or 30)
+    horizon = parse_forecast_horizon(payload.get("forecastPeriod") or payload.get("forecast_horizon") or 30)
 
     res = FORECASTER.predict(
         origin=origin,

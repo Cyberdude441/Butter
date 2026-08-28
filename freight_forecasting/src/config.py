@@ -72,10 +72,32 @@ DESTINATION_ALIASES = {
     "sagar": "Sagar/Sandheads Anchorage, India",
     "sandheads": "Sagar/Sandheads Anchorage, India",
     "sagar/sandheads": "Sagar/Sandheads Anchorage, India",
+    "sagar sandheads": "Sagar/Sandheads Anchorage, India",
+    "sagar-sandheads": "Sagar/Sandheads Anchorage, India",
     "haldia": "Haldia, India",
 }
 
 VESSEL_TYPES = ["Handysize", "Supramax", "Panamax", "Capesize"]
+
+
+def parse_forecast_horizon(val: object) -> int:
+    """Parse integer days from various user input formats (e.g. 'Next 30 Days', 'short-term', 30)."""
+    if isinstance(val, (int, float)):
+        int_val = int(val)
+        return int_val if int_val in HORIZONS else 30
+    s = str(val).strip().lower()
+    if "7" in s:
+        return 7
+    if "14" in s:
+        return 14
+    if "90" in s or "mid" in s or "long" in s or "3 month" in s:
+        return 90
+    if "60" in s:
+        return 60
+    if "30" in s or "short" in s or "1 month" in s:
+        return 30
+    return 30
+
 
 DATA_STATUS_INFO = {
     "freight_rates": "PROXY / CALIBRATED HISTORICAL",
@@ -85,3 +107,4 @@ DATA_STATUS_INFO = {
     "vessels": "REAL / BALTIC EXCHANGE STANDARD REFERENCE SPECS",
     "routes": "REAL / NAUTICAL DISTANCES WITH CIRCUITY FACTORS",
 }
+
