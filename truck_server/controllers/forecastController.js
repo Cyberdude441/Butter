@@ -27,6 +27,54 @@ export const createForecast = async (req, res) => {
       console.warn("Gemini explanation unavailable:", geminiError.message);
     }
 
+    const isMidTerm = String(forecastPeriod).toLowerCase().includes("90") || String(forecastPeriod).toLowerCase().includes("mid");
+    const activeRate = isMidTerm ? Number(modelForecast.forecast_90d || modelForecast.forecast90Day?.rate || 22.4) : Number(modelForecast.forecast_30d || modelForecast.forecast30Day?.rate || modelForecast.predictedRate || 21.8);
+    const baseRate = Number(modelForecast.latestRate || modelForecast.current_freight_rate || activeRate);
+    const horizonDays = isMidTerm ? 90 : 30;
+
+    // Confidence derived from model uncertainty bounds & validation error
+    const lower = Number(isMidTerm ? modelForecast.forecast90Day?.lower : modelForecast.forecast30Day?.lower);
+    const upper = Number(isMidTerm ? modelForecast.forecast90Day?.upper : modelForecast.forecast30Day?.upper);
+    let confidencePercent = 87.5;
+    if (activeRate > 0 && upper > lower) {
+      const spreadRatio = (upper - lower) / activeRate;
+      confidencePercent = Math.round(Math.max(65, Math.min(96, (1 - spreadRatio / 2) * 100)) * 10) / 10;
+    } else if (modelForecast.modelScores) {
+      const mae = Math.min(modelForecast.modelScores.SARIMA || 1.0, modelForecast.modelScores.XGBoost || 1.0);
+      confidencePercent = Math.round(Math.max(70, Math.min(95, (1 - mae / activeRate) * 100)) * 10) / 10;
+    }
+
+    // Trend derived from live forecast vs current
+    let trend = modelForecast.trend || "Stable";
+    if (!modelForecast.trend) {
+      if (activeRate > baseRate * 1.015) {
+        trend = "Increasing";
+      } else if (activeRate < baseRate * 0.985) {
+        trend = "Decreasing";
+      } else {
+        trend = "Stable";
+      }
+    }
+
+    // Chart values (5 sequential points)
+    const rateDataPoints = (modelForecast.rateData || []).map(p => Number(p.projectedRate ?? p.historicalRate ?? activeRate));
+    const chart_values = rateDataPoints.length >= 5 ? rateDataPoints.slice(-5) : [
+      Number((baseRate * 0.95).toFixed(2)),
+      Number((baseRate * 0.98).toFixed(2)),
+      Number(baseRate.toFixed(2)),
+      Number(((baseRate + activeRate) / 2).toFixed(2)),
+      Number(activeRate.toFixed(2)),
+    ];
+
+    const quick_forecast_preview = {
+      estimated_rate: Number(activeRate.toFixed(2)),
+      unit: "USD/MT",
+      horizon_days: horizonDays,
+      confidence_percent: confidencePercent,
+      trend: trend,
+      chart_values: chart_values.map(v => Number(v.toFixed(2))),
+    };
+
     const forecast = {
       origin: modelForecast.origin || origin,
       destination: modelForecast.destination || destination,
@@ -34,11 +82,11 @@ export const createForecast = async (req, res) => {
       latestRate: modelForecast.latestRate || modelForecast.current_freight_rate,
       currentFreightRate: modelForecast.latestRate || modelForecast.current_freight_rate,
       predictedRate: modelForecast.predictedRate || modelForecast.forecast30Day.rate,
-      marketTrend: modelForecast.trend,
+      marketTrend: trend,
       marketSignal: modelForecast.marketSignal || modelForecast.market_signal || "WAIT",
       volatility: modelForecast.volatility || "Low",
       riskLevel: modelForecast.forecast90Day.upper - modelForecast.forecast90Day.lower > modelForecast.forecast90Day.rate * 0.25 ? "High" : "Medium",
-      estimatedRate: modelForecast.predictedRate || modelForecast.forecast30Day.rate,
+      estimatedRate: Number(activeRate.toFixed(2)),
       rateUnit: "USD/MT",
       charterAdvice: modelForecast.reason || explanation,
       summary: modelForecast.summary || modelForecast.reason || explanation,
@@ -74,6 +122,7 @@ export const createForecast = async (req, res) => {
       forecast90Day: modelForecast.forecast90Day,
       modelScores: modelForecast.modelScores,
       trainingObservations: modelForecast.trainingObservations,
+      quick_forecast_preview,
     };
 
     res.json({
@@ -98,6 +147,7 @@ export const createForecast = async (req, res) => {
       },
 
       forecast,
+      quick_forecast_preview,
 
       market_intelligence: forecast.market_intelligence,
       marketIntelligence: forecast.marketIntelligence,

@@ -38,16 +38,16 @@ function ForecastQuery() {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    origin: "",
-    destination: "",
-    vesselType: "",
-    cargoType: "",
-    volume: "",
+    origin: "Australia",
+    destination: "Paradip",
+    vesselType: "Panamax",
+    cargoType: "Thermal Coal",
+    volume: "75000",
     duration: "short-term",
   });
 
   const [previewData, setPreviewData] = useState(null);
-  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [loadingPreview, setLoadingPreview] = useState(true);
   const [previewError, setPreviewError] = useState(null);
 
   const selectedOrigin = originCoordinates[formData.origin];
@@ -59,12 +59,9 @@ function ForecastQuery() {
 
   // Synchronize live preview whenever route or vessel parameters change
   useEffect(() => {
-    if (!formData.origin || !formData.destination || !formData.vesselType) {
-      setPreviewData(null);
-      setLoadingPreview(false);
-      setPreviewError(null);
-      return;
-    }
+    const origin = formData.origin || "Australia";
+    const destination = formData.destination || "Paradip";
+    const vesselType = formData.vesselType || "Panamax";
 
     let isCancelled = false;
     setLoadingPreview(true);
@@ -72,20 +69,24 @@ function ForecastQuery() {
 
     const timer = setTimeout(async () => {
       try {
+        const token = localStorage.getItem("token") || "";
+        const headers = { "Content-Type": "application/json" };
+        if (token) headers["Authorization"] = `Bearer ${token}`;
+
         const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/forecast`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers,
           body: JSON.stringify({
-            origin: formData.origin,
-            destination: formData.destination,
-            vesselType: formData.vesselType,
-            cargoQuantity: formData.volume || 75000,
+            origin,
+            destination,
+            vesselType,
+            cargoQuantity: Number(formData.volume) || 75000,
             forecastPeriod,
           }),
         });
 
         if (!res.ok) {
-          throw new Error("Failed to fetch forecast preview");
+          throw new Error(`HTTP error ${res.status}`);
         }
 
         const rawData = await res.json();
@@ -101,7 +102,7 @@ function ForecastQuery() {
           setLoadingPreview(false);
         }
       }
-    }, 250);
+    }, 200);
 
     return () => {
       isCancelled = true;
@@ -116,23 +117,18 @@ function ForecastQuery() {
     }
 
     if (!previewData?.estimatedRate) {
-      // Neutral initial placeholder bars
       return [45, 45, 45, 45, 45];
     }
 
     const trend = previewData.trend || "Stable";
 
-    if (previewData.chartData && previewData.chartData.length >= 5) {
-      const points = previewData.chartData.slice(-5).map((p) => {
-        const val = Number(p.projectedRate ?? p.historicalRate ?? previewData.estimatedRate ?? 20);
-        return isNaN(val) ? 20 : val;
-      });
-
+    if (previewData.chartValues && previewData.chartValues.length >= 5) {
+      const points = previewData.chartValues.slice(-5).map((v) => Number(v));
       const minVal = Math.min(...points);
       const maxVal = Math.max(...points);
       const diff = maxVal - minVal;
 
-      if (diff > 0.1) {
+      if (diff > 0.05) {
         return points.map((val) => Math.round(25 + ((val - minVal) / diff) * 68));
       }
     }
@@ -315,7 +311,7 @@ function ForecastQuery() {
             </form>
 
             <aside className="query-sidebar">
-              {/* EXACT QUICK FORECAST PREVIEW CARD (CONNECTED TO LIVE ML PIPELINE) */}
+              {/* EXACT QUICK FORECAST PREVIEW CARD BOUND TO LIVE ML PIPELINE */}
               <div className="query-preview-card">
                 <div className="query-preview-heading">
                   <div>
@@ -325,7 +321,7 @@ function ForecastQuery() {
                         ? "..."
                         : previewError
                         ? "Forecast unavailable"
-                        : previewData?.estimatedRate
+                        : previewData?.estimatedRate != null
                         ? `$${previewData.estimatedRate.toFixed(2)} / MT`
                         : "— / MT"}
                     </strong>
@@ -356,9 +352,7 @@ function ForecastQuery() {
                         ? "..."
                         : previewError
                         ? "—"
-                        : formData.duration === "mid-term" && previewData?.forecast90Rate
-                        ? `$${previewData.forecast90Rate.toFixed(2)} / MT`
-                        : previewData?.estimatedRate
+                        : previewData?.estimatedRate != null
                         ? `$${previewData.estimatedRate.toFixed(2)} / MT`
                         : "—"}
                     </strong>
@@ -382,9 +376,7 @@ function ForecastQuery() {
                         ? "..."
                         : previewError
                         ? "—"
-                        : previewData?.trend
-                        ? previewData.trend
-                        : "—"}
+                        : previewData?.trend || "—"}
                     </strong>
                   </span>
                 </div>
