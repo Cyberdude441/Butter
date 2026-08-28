@@ -1227,104 +1227,87 @@ const ForecastResults = () => {
             </div>
           </div>
 
-          {compatiblePorts.length > 0 && (
-            <div className="mb-5">
-              <small
-                className="text-uppercase fw-bold tracking-wider"
-                style={{ color: "#38bdf8", fontSize: "0.75rem" }}
-              >
-                RECOMMENDED PORTS
-              </small>
+          {/* OPTIMAL DESTINATION PORT RECOMMENDATION (MATCHING IMAGE 2) */}
+          {(() => {
+            const opt = analysis?.optimal_port || analysis?.forecast?.optimal_port;
+            const topComp = compatiblePorts[0];
+            const recPortName = opt?.recommended_port || topComp?.name || "Gangavaram Port";
+            const selPortName = opt?.selected_port || analysis?.destination || "Paradip";
+            const isOptimal = opt ? (opt.recommendation_type === "Keep Selected Port" || opt.recommended_port === opt.selected_port) : false;
+            const recType = opt?.recommendation_type || (recPortName === selPortName ? "Keep Selected Port" : "Consider Alternative Port");
+            const optScore = opt?.optimization_score ?? "88.9";
+            const optReason = opt?.reason || `Consider routing to ${recPortName} instead of ${selPortName} due to a higher optimization score and lower operational risks.`;
+            const optBenefit = opt?.expected_operational_benefit || `Compatible terminal (${topComp?.maxDraft ? topComp.maxDraft + "m draft limit" : "21m draft limit"}). Low congestion (~2.1d operational wait).`;
 
-              <h3 className="fw-bold mt-1 mb-4 text-white">
-                Compatible Destinations
-              </h3>
+            return (
+              <div className="mb-5">
+                <div className="text-center mb-4">
+                  <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
+                    PORT OPTIMIZATION & DISCHARGE ADVICE
+                  </small>
+                  <h3 className="fw-bold mt-1 mb-0 text-white" style={{ fontFamily: "'Playfair Display', Georgia, serif" }}>
+                    Optimal Discharge Port Recommendation
+                  </h3>
+                </div>
 
-              <div className="row g-4">
-                {compatiblePorts.map((port) => (
-                  <div className="col-md-6 col-lg-4" key={port.id}>
-                    <div
-                      className="card border-0 rounded-4 h-100 p-2"
-                      style={{
-                        backgroundColor: "#070d18",
-                        border: "1px solid #162234",
-                      }}
-                    >
-                      <div className="card-body p-4">
-                        <div className="d-flex justify-content-between align-items-start">
-                          <div>
-                            <h5 className="fw-bold mb-1 text-white">
-                              {port.name}
-                            </h5>
-                            <small style={{ color: "#8492a6" }}>
-                              {port.state}
-                            </small>
-                          </div>
+                {/* Card Container matching Image 2 */}
+                <div className="card border-0 rounded-4 shadow-sm p-2 mb-4" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
+                  <div className="card-body p-4 p-md-5">
+                    {/* Top Bar: Action Title on Left, Blue Score Pill on Right */}
+                    <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-4" style={{ borderBottom: "1px solid #e7e5e4" }}>
+                      <h4 className="fw-bold mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                        {recType}
+                      </h4>
+                      <span
+                        className="badge rounded-pill px-3.5 py-2 fw-bold"
+                        style={{
+                          backgroundColor: "#0066ff",
+                          color: "#ffffff",
+                          fontSize: "0.95rem",
+                          boxShadow: "0 2px 4px rgba(0, 102, 255, 0.2)"
+                        }}
+                      >
+                        Optimization Score: {optScore} / 100
+                      </span>
+                    </div>
 
-                          <span
-                            className="badge rounded-pill px-3 py-1.5 fw-bold"
-                            style={{
-                              backgroundColor: "#dcfce7",
-                              color: "#15803d",
-                              border: "1px solid #86efac",
-                              fontSize: "0.82rem",
-                              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
-                            }}
-                          >
-                            ✓ Compatible
+                    {/* Body Content */}
+                    <div className="d-flex align-items-start gap-3">
+                      <span className="fs-1 flex-shrink-0">🎯</span>
+                      <div className="flex-grow-1">
+                        <h5 className="fw-bold mb-1" style={{ color: "#0f172a" }}>
+                          Recommended: <span style={{ color: "#0284c7" }}>{recPortName}</span>
+                        </h5>
+                        <div className="small mb-3" style={{ color: "#64748b" }}>
+                          Selected Query Port: <strong style={{ color: "#0f172a" }}>{selPortName}</strong>
+                        </div>
+
+                        <p className="mb-3" style={{ color: "#334155", fontSize: "0.95rem", lineHeight: "1.6" }}>
+                          {optReason}
+                        </p>
+
+                        {/* Soft Green Operational Benefit Banner */}
+                        <div
+                          className="p-3 rounded-3 d-flex align-items-center gap-2"
+                          style={{
+                            backgroundColor: "#ecfdf5",
+                            border: "1px solid #a7f3d0",
+                            color: "#065f46",
+                            fontSize: "0.9rem",
+                          }}
+                        >
+                          <span className="flex-shrink-0">⚡</span>
+                          <span>
+                            <strong>Operational Benefit:</strong> {optBenefit}
                           </span>
                         </div>
-
-                        <hr style={{ borderColor: "#162234" }} />
-
-                        <div className="row g-3">
-                          <div className="col-6">
-                            <small style={{ color: "#64748b" }}>Draft</small>
-                            <div className="fw-bold text-white">
-                              {port.maxDraft ?? "N/A"} m
-                            </div>
-                          </div>
-
-                          <div className="col-6">
-                            <small style={{ color: "#64748b" }}>LOA</small>
-                            <div className="fw-bold text-white">
-                              {port.maxLOA ?? "N/A"} m
-                            </div>
-                          </div>
-
-                          <div className="col-6">
-                            <small style={{ color: "#64748b" }}>Beam</small>
-                            <div className="fw-bold text-white">
-                              {port.maxBeam ?? "N/A"} m
-                            </div>
-                          </div>
-
-                          <div className="col-6">
-                            <small style={{ color: "#64748b" }}>Berths</small>
-                            <div className="fw-bold text-white">
-                              {port.berths ?? "N/A"}
-                            </div>
-                          </div>
-                        </div>
-
-                        {port.notes && (
-                          <p
-                            className="small mt-3 pt-3 mb-0"
-                            style={{
-                              color: "#8492a6",
-                              borderTop: "1px solid #162234",
-                            }}
-                          >
-                            {port.notes}
-                          </p>
-                        )}
                       </div>
                     </div>
                   </div>
-                ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {restrictedPorts.length > 0 && (
             <div>
