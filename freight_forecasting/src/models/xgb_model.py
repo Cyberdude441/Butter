@@ -1,6 +1,6 @@
 """Multi-Horizon XGBoost Regressors for Freight Rate Forecasting."""
 from __future__ import annotations
-import joblib
+import json
 from pathlib import Path
 from typing import Dict, List, Tuple, Any
 import numpy as np
@@ -91,11 +91,46 @@ class MultiHorizonXGBoost:
         sorted_pairs = sorted(zip(self.feature_names, importances), key=lambda x: x[1], reverse=True)
         return {feat: round(float(imp), 4) for feat, imp in sorted_pairs}
 
-    def save(self, path: Path | str = MODELS_DIR / "xgb_models_multihorizon.joblib") -> None:
-        """Serialize trained models."""
-        joblib.dump(self, path)
+    def save(self, directory: Path | str = MODELS_DIR) -> None:
+        """Serialize trained models natively in JSON format."""
+        dir_path = Path(directory)
+        dir_path.mkdir(parents=True, exist_ok=True)
+        
+        # Save each model in native json format
+        for h, model in self.models.items():
+            model_file = dir_path / f"xgb_horizon_{h}d.json"
+            model.save_model(str(model_file))
+            
+        # Save metadata
+        meta = {
+            "feature_names": self.feature_names,
+            "residual_stds": {str(k): v for k, v in self.residual_stds.items()},
+            "horizons": HORIZONS,
+        }
+        with open(dir_path / "xgb_metadata.json", "w", encoding="utf-8") as f:
+            json.dump(meta, f, indent=2)
 
     @classmethod
-    def load(cls, path: Path | str = MODELS_DIR / "xgb_models_multihorizon.joblib") -> "MultiHorizonXGBoost":
-        """Load trained models."""
-        return joblib.load(path)
+    def load(cls, directory: Path | str = MODELS_DIR) -> "MultiHorizonXGBoost":
+        """Load trained models from native JSON files."""
+        dir_path = Path(directory)
+        meta_file = dir_path / "xgb_metadata.json"
+        
+        if not meta_file.exists():
+            raise FileNotFoundError(f"XGB metadata not found at {meta_file}")
+            
+        with open(meta_file, "r", encoding="utf-8") as f:
+            meta = json.load(f)
+            
+        instance = cls()
+        instance.feature_names = meta.get("feature_names", [])
+        instance.residual_stds = {int(k): float(v) for k, v in meta.get("residual_stds", {}).items()}
+        
+        for h in meta.get("horizons", HORIZONS):
+            model_file = dir_path / f"xgb_horizon_{h}d.json"
+            if model_file.exists():
+                model = XGBRegressor()
+                model.load_model(str(model_file))
+                instance.models[h] = model
+                
+        return instance

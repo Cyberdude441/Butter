@@ -84,8 +84,8 @@ def run_training_pipeline() -> None:
     targets = {h: df_clean[f"freight_rate_{h}d"] for h in HORIZONS}
     xgb_multi = MultiHorizonXGBoost()
     xgb_multi.fit(df_clean, targets, available_features)
-    xgb_multi.save(MODELS_DIR / "xgb_models_multihorizon.joblib")
-    print("  Saved multi-horizon models to models/xgb_models_multihorizon.joblib")
+    xgb_multi.save(MODELS_DIR)
+    print("  Saved multi-horizon models to models/ in native JSON format")
 
     # Feature Importance Export
     feat_imp = xgb_multi.get_feature_importances(horizon=30)

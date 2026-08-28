@@ -45,13 +45,16 @@ class FreightForecaster:
             print(f"Warning: Dataset load failed: {err}")
 
         prep_path = MODELS_DIR / "preprocessing_pipeline.joblib"
-        xgb_path = MODELS_DIR / "xgb_models_multihorizon.joblib"
+        xgb_meta_path = MODELS_DIR / "xgb_metadata.json"
         metrics_path = MODELS_DIR / "model_comparison_metrics.json"
 
         if prep_path.exists():
             self.preprocessor = DataPreprocessor.load(prep_path)
-        if xgb_path.exists():
-            self.xgb_models = MultiHorizonXGBoost.load(xgb_path)
+        if xgb_meta_path.exists():
+            try:
+                self.xgb_models = MultiHorizonXGBoost.load(MODELS_DIR)
+            except Exception as e:
+                print(f"Warning: Failed loading XGB models: {e}")
         if metrics_path.exists():
             with open(metrics_path, "r", encoding="utf-8") as f:
                 self.comparison_metrics = json.load(f)

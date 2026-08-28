@@ -1,0 +1,51 @@
+{
+  "feature_names": [
+    "month_sin",
+    "month_cos",
+    "week_sin",
+    "week_cos",
+    "freight_lag_1",
+    "freight_lag_7",
+    "freight_lag_14",
+    "freight_lag_30",
+    "rolling_mean_7",
+    "rolling_mean_14",
+    "rolling_mean_30",
+    "rolling_std_7",
+    "rolling_std_30",
+    "freight_change_1d",
+    "freight_change_7d",
+    "bunker_price",
+    "bunker_lag_1",
+    "bunker_lag_7",
+    "coal_price",
+    "coal_lag_1",
+    "coal_lag_7",
+    "demand_index",
+    "vessel_supply_index",
+    "demand_supply_ratio",
+    "port_congestion_index",
+    "congestion_lag_7",
+    "route_distance",
+    "usd_inr",
+    "oil_price",
+    "origin_port_enc",
+    "destination_port_enc",
+    "vessel_type_enc",
+    "season_enc"
+  ],
+  "residual_stds": {
+    "7": 0.5015849077705131,
+    "14": 0.5089040450581249,
+    "30": 0.48583452040242436,
+    "60": 0.4578947112140047,
+    "90": 0.46183914474964294
+  },
+  "horizons": [
+    7,
+    14,
+    30,
+    60,
+    90
+  ]
+}

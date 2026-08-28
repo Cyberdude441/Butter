@@ -29,6 +29,17 @@ app.get("/", (req, res) => {
   res.send("Welcome to Intelligent Freight Forecasting Server");
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+// Keep event loop active in background environments
+setInterval(() => {}, 60000);
+
+process.on("unhandledRejection", (reason) => {
+  console.error("Unhandled Rejection:", reason);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+});
