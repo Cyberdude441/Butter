@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import RouteMap from "../components/RouteMap";
 import panamaxImage from "../assets/screenshot-2026-08-26_18-14-46.png";
+import { AdaniLogo, JSWLogo, VedantaLogo, AMNSLogo, MaithanLogo } from "../components/CompanyLogos";
 
 const homeOriginCoordinates = { lat: -20.3115, lng: 118.6069 };
 const homeDestinationCoordinates = { lat: 20.2648, lng: 86.6947 };
@@ -681,16 +682,15 @@ const Home = () => {
                   </div>
 
                   <div className="mb-4">
-                    <label className="form-label small" style={{ color: "#94a3b8" }}>Inquiry / Message Details *</label>
+                    <label className="form-label small fw-semibold" style={{ color: "#cbd5e1" }}>Inquiry / Message Details *</label>
                     <textarea
                       name="message"
                       rows="4"
-                      className="form-control"
+                      className="form-control contact-white-textarea"
                       placeholder="Please specify your bulk cargo volume, chartering window, or data questions..."
                       value={contactForm.message}
                       onChange={handleContactChange}
                       required
-                      style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
                     ></textarea>
                   </div>
 
@@ -716,7 +716,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* BRAND-CONSISTENT TRUSTED BY CLIENT LOGO SECTION */}
+      {/* TRUSTED BY CHARTERERS AND LOGISTICS TEAMS STRIP */}
       <section className="trusted-band py-4">
         <div className="container d-flex flex-wrap align-items-center justify-content-between gap-4">
           <div className="d-flex align-items-center gap-2">
@@ -729,16 +729,35 @@ const Home = () => {
                 display: "inline-block",
               }}
             ></span>
-            <small style={{ color: "#8da197", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.75rem", fontWeight: "600" }}>
+            <small style={{ color: "#94a3b8", textTransform: "uppercase", letterSpacing: "0.06em", fontSize: "0.75rem", fontWeight: "700" }}>
               Trusted by charterers and logistics teams
             </small>
           </div>
-          <div className="d-flex flex-wrap align-items-center gap-4 gap-lg-5">
-            <strong className="trusted-client">adani</strong>
-            <strong className="trusted-client">JSW</strong>
-            <strong className="trusted-client">vedanta</strong>
-            <strong className="trusted-client">AM/NS INDIA</strong>
-            <strong className="trusted-client">Maithan Alloys</strong>
+          <div className="trusted-companies-grid d-flex flex-wrap align-items-center gap-4 gap-lg-5">
+            <div className="company-logo-item d-flex align-items-center gap-2" title="Adani Group">
+              <AdaniLogo />
+              <strong className="trusted-client">adani</strong>
+            </div>
+
+            <div className="company-logo-item d-flex align-items-center gap-2" title="JSW Group">
+              <JSWLogo />
+              <strong className="trusted-client">JSW</strong>
+            </div>
+
+            <div className="company-logo-item d-flex align-items-center gap-2" title="Vedanta Resources">
+              <VedantaLogo />
+              <strong className="trusted-client">vedanta</strong>
+            </div>
+
+            <div className="company-logo-item d-flex align-items-center gap-2" title="ArcelorMittal Nippon Steel India">
+              <AMNSLogo />
+              <strong className="trusted-client">AM/NS INDIA</strong>
+            </div>
+
+            <div className="company-logo-item d-flex align-items-center gap-2" title="Maithan Alloys Ltd">
+              <MaithanLogo />
+              <strong className="trusted-client">Maithan Alloys</strong>
+            </div>
           </div>
         </div>
       </section>
