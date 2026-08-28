@@ -22,5 +22,7 @@ Thumbs.db
 .vscode/
 .idea/
 #python
-_pycache_
-.venv
+__pycache__/
+*.pyc
+*.pyo
+.venv
