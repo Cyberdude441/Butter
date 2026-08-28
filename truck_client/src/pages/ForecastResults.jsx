@@ -641,26 +641,35 @@ const ForecastResults = () => {
                 <div className="mt-4">
                   <div className="d-flex align-items-center justify-content-between mb-3">
                     <div>
-                      <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#38bdf8", fontSize: "0.75rem" }}>
+                      <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
                         LIVE MARKET & PORT INDICATORS
                       </small>
-                      <h4 className="fw-bold mt-1 mb-0 text-white">Market & Port Intelligence</h4>
+                      <h4 className="fw-bold mt-1 mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                        Market & Port Intelligence
+                      </h4>
                     </div>
                   </div>
 
                   <div className="row g-4">
                     {/* 1. Demand Card */}
                     <div className="col-md-3">
-                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                      <div className="card border-0 rounded-4 h-100 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
                         <div className="card-body p-3">
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <span className="fs-3">📊</span>
-                            <span className={`badge px-2 py-1 ${(analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "High" ? "bg-success text-white" : (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "Low" ? "bg-danger text-white" : "bg-info text-dark"}`}>
+                            <span
+                              className="badge rounded-pill px-2.5 py-1 fw-bold"
+                              style={{
+                                backgroundColor: (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "High" ? "#dcfce7" : (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "Low" ? "#fee2e2" : "#e0f2fe",
+                                color: (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "High" ? "#15803d" : (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "Low" ? "#b91c1c" : "#0369a1",
+                                border: `1px solid ${(analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "High" ? "#86efac" : (analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status) === "Low" ? "#fca5a5" : "#bae6fd"}`,
+                              }}
+                            >
                               {analysis.market_intelligence?.demand_status || analysis.forecast?.market_intelligence?.demand_status || "Normal"}
                             </span>
                           </div>
-                          <small style={{ color: "#8492a6" }}>Cargo Demand</small>
-                          <h4 className="fw-bold mt-1 text-white mb-0">
+                          <small style={{ color: "#64748b", fontWeight: "600" }}>Cargo Demand</small>
+                          <h4 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
                             {analysis.market_intelligence?.demand_index || analysis.forecast?.market_intelligence?.demand_index || "100.1"} <span className="fs-6 text-muted fw-normal">Index</span>
                           </h4>
                         </div>
@@ -669,16 +678,23 @@ const ForecastResults = () => {
 
                     {/* 2. Vessel Supply Card */}
                     <div className="col-md-3">
-                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                      <div className="card border-0 rounded-4 h-100 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
                         <div className="card-body p-3">
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <span className="fs-3">🚢</span>
-                            <span className={`badge px-2 py-1 ${(analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Tight" ? "bg-warning text-dark" : (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Excess" ? "bg-primary text-white" : "bg-info text-dark"}`}>
+                            <span
+                              className="badge rounded-pill px-2.5 py-1 fw-bold"
+                              style={{
+                                backgroundColor: (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Tight" ? "#fee2e2" : (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Excess" ? "#e0f2fe" : "#dcfce7",
+                                color: (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Tight" ? "#b91c1c" : (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Excess" ? "#0369a1" : "#15803d",
+                                border: `1px solid ${(analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Tight" ? "#fca5a5" : (analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status) === "Excess" ? "#bae6fd" : "#86efac"}`,
+                              }}
+                            >
                               {analysis.market_intelligence?.supply_status || analysis.forecast?.market_intelligence?.supply_status || "Balanced"}
                             </span>
                           </div>
-                          <small style={{ color: "#8492a6" }}>Vessel Supply</small>
-                          <h4 className="fw-bold mt-1 text-white mb-0">
+                          <small style={{ color: "#64748b", fontWeight: "600" }}>Vessel Supply</small>
+                          <h4 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
                             {analysis.market_intelligence?.vessel_supply_index || analysis.forecast?.market_intelligence?.vessel_supply_index || "100.4"} <span className="fs-6 text-muted fw-normal">Index</span>
                           </h4>
                         </div>
@@ -687,16 +703,23 @@ const ForecastResults = () => {
 
                     {/* 3. Port Congestion Card */}
                     <div className="col-md-3">
-                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                      <div className="card border-0 rounded-4 h-100 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
                         <div className="card-body p-3">
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <span className="fs-3">⚓</span>
-                            <span className={`badge px-2 py-1 ${(analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "Low" ? "bg-success text-white" : (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "High" ? "bg-danger text-white" : "bg-warning text-dark"}`}>
+                            <span
+                              className="badge rounded-pill px-2.5 py-1 fw-bold"
+                              style={{
+                                backgroundColor: (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "Low" ? "#dcfce7" : (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "High" ? "#fee2e2" : "#fef3c7",
+                                color: (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "Low" ? "#15803d" : (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "High" ? "#b91c1c" : "#b45309",
+                                border: `1px solid ${(analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "Low" ? "#86efac" : (analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level) === "High" ? "#fca5a5" : "#fde68a"}`,
+                              }}
+                            >
                               {analysis.port_analysis?.congestion_level || analysis.forecast?.port_analysis?.congestion_level || "Medium"}
                             </span>
                           </div>
-                          <small style={{ color: "#8492a6" }}>Port Congestion</small>
-                          <h4 className="fw-bold mt-1 text-white mb-0">
+                          <small style={{ color: "#64748b", fontWeight: "600" }}>Port Congestion</small>
+                          <h4 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
                             {analysis.port_analysis?.congestion_index || analysis.forecast?.port_analysis?.congestion_index || "35.2"} <span className="fs-6 text-muted fw-normal">Score</span>
                           </h4>
                         </div>
@@ -705,16 +728,23 @@ const ForecastResults = () => {
 
                     {/* 4. Estimated Delay Card */}
                     <div className="col-md-3">
-                      <div className="card border-0 rounded-4 h-100 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                      <div className="card border-0 rounded-4 h-100 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
                         <div className="card-body p-3">
                           <div className="d-flex justify-content-between align-items-center mb-2">
                             <span className="fs-3">⏱️</span>
-                            <span className={`badge px-2 py-1 ${(analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "Low" ? "bg-success text-white" : (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "High" ? "bg-danger text-white" : "bg-warning text-dark"}`}>
+                            <span
+                              className="badge rounded-pill px-2.5 py-1 fw-bold"
+                              style={{
+                                backgroundColor: (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "Low" ? "#dcfce7" : (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "High" ? "#fee2e2" : "#fef3c7",
+                                color: (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "Low" ? "#15803d" : (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "High" ? "#b91c1c" : "#b45309",
+                                border: `1px solid ${(analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "Low" ? "#86efac" : (analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level) === "High" ? "#fca5a5" : "#fde68a"}`,
+                              }}
+                            >
                               {analysis.port_analysis?.delay_level || analysis.forecast?.port_analysis?.delay_level || "Medium"} Delay
                             </span>
                           </div>
-                          <small style={{ color: "#8492a6" }}>Estimated Wait Time</small>
-                          <h4 className="fw-bold mt-1 text-white mb-0">
+                          <small style={{ color: "#64748b", fontWeight: "600" }}>Estimated Wait Time</small>
+                          <h4 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
                             ~{analysis.port_analysis?.estimated_delay_days || analysis.forecast?.port_analysis?.estimated_delay_days || "2.2"} <span className="fs-6 text-muted fw-normal">Days</span>
                           </h4>
                         </div>
@@ -730,48 +760,48 @@ const ForecastResults = () => {
                 const isOptimal = opt.recommendation_type === "Keep Selected Port" || opt.recommended_port === opt.selected_port;
 
                 return (
-                  <div className="card border-0 rounded-4 mt-4 p-2" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
+                  <div className="card border-0 rounded-4 mt-4 p-2 shadow-sm" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
                     <div className="card-body p-4 p-md-5">
                       <div className="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
                         <div>
-                          <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#38bdf8", fontSize: "0.75rem" }}>
+                          <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
                             PORT OPTIMIZATION & DISCHARGE ADVICE
                           </small>
-                          <h3 className="fw-bold mt-1 text-white mb-0">
+                          <h3 className="fw-bold mt-1 mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
                             🏆 Optimal Discharge Port Recommendation
                           </h3>
                         </div>
-                        <span className={`badge rounded-pill px-3 py-2 fs-6 fw-semibold ${isOptimal ? "bg-success text-white" : "bg-warning text-dark"}`}>
+                        <span className={`badge rounded-pill px-3 py-2 fs-6 fw-bold ${isOptimal ? "bg-success text-white" : "bg-warning text-dark"}`}>
                           {opt.recommendation_type}
                         </span>
                       </div>
 
                       {/* Highlight Recommendation Card */}
-                      <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: "#0b1320", border: `1px solid ${isOptimal ? "#064e3b" : "#b45309"}` }}>
+                      <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: isOptimal ? "#f0fdf4" : "#fffbeb", border: `1px solid ${isOptimal ? "#86efac" : "#fde68a"}` }}>
                         <div className="row g-4 align-items-center">
                           <div className="col-12 col-lg-8">
                             <div className="d-flex align-items-center gap-3 mb-2">
                               <span className="fs-2 flex-shrink-0">🎯</span>
                               <div>
-                                <h4 className="fw-bold text-white mb-0">
-                                  Recommended: <span style={{ color: "#38bdf8" }}>{opt.recommended_port}</span>
+                                <h4 className="fw-bold mb-0" style={{ color: "#0f172a" }}>
+                                  Recommended: <span style={{ color: "#0284c7" }}>{opt.recommended_port}</span>
                                 </h4>
-                                <small style={{ color: "#8492a6" }}>
-                                  Selected Query Port: <strong className="text-white">{opt.selected_port}</strong>
+                                <small style={{ color: "#475569" }}>
+                                  Selected Query Port: <strong style={{ color: "#0f172a" }}>{opt.selected_port}</strong>
                                 </small>
                               </div>
                             </div>
 
-                            <p className="mt-2 mb-0 text-white-50" style={{ lineHeight: "1.6", fontSize: "0.95rem" }}>
+                            <p className="mt-2 mb-0" style={{ color: "#334155", lineHeight: "1.6", fontSize: "0.95rem" }}>
                               {opt.reason}
                             </p>
 
                             <div
                               className="d-flex align-items-start gap-2 mt-3 p-2 px-3 rounded-3"
                               style={{
-                                backgroundColor: "rgba(56, 189, 248, 0.08)",
-                                border: "1px solid rgba(56, 189, 248, 0.2)",
-                                color: "#38bdf8",
+                                backgroundColor: "#e0f2fe",
+                                border: "1px solid #bae6fd",
+                                color: "#0369a1",
                                 fontSize: "0.85rem",
                                 lineHeight: "1.5",
                                 maxWidth: "100%",
@@ -786,23 +816,23 @@ const ForecastResults = () => {
 
                           <div className="col-12 col-lg-4">
                             <div
-                              className="p-3 rounded-4 text-center h-100 d-flex flex-column justify-content-center"
+                              className="p-3 rounded-4 text-center h-100 d-flex flex-column justify-content-center shadow-sm"
                               style={{
-                                backgroundColor: "#070d18",
-                                border: "1px solid #162234",
+                                backgroundColor: "#ffffff",
+                                border: "1px solid #e2e8f0",
                                 minWidth: "160px",
                               }}
                             >
-                              <small style={{ color: "#8492a6", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                              <small style={{ color: "#64748b", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: "600" }}>
                                 Optimization Score
                               </small>
                               <div className="d-flex align-items-baseline justify-content-center gap-1 my-1">
-                                <span className="fw-bold" style={{ fontSize: "2.25rem", color: "#38bdf8", lineHeight: "1" }}>
+                                <span className="fw-bold" style={{ fontSize: "2.25rem", color: "#0284c7", lineHeight: "1" }}>
                                   {opt.optimization_score}
                                 </span>
                                 <span style={{ color: "#64748b", fontSize: "0.9rem" }}>/ 100</span>
                               </div>
-                              <small style={{ color: opt.congestion_level === "Low" ? "#34d399" : opt.congestion_level === "High" ? "#f87171" : "#fbbf24", fontSize: "0.8rem", fontWeight: "500" }}>
+                              <small style={{ color: opt.congestion_level === "Low" ? "#15803d" : opt.congestion_level === "High" ? "#b91c1c" : "#b45309", fontSize: "0.82rem", fontWeight: "600" }}>
                                 Est. Delay: ~{opt.estimated_delay_days}d ({opt.congestion_level} Congestion)
                               </small>
                             </div>
@@ -812,19 +842,21 @@ const ForecastResults = () => {
 
                       {/* Multi-Factor Port Ranking Table */}
                       {opt.ranked_alternatives?.length > 0 && (
-                        <div>
-                          <h5 className="fw-bold text-white mb-3">Multi-Factor Alternative Port Rankings</h5>
-                          <div className="table-responsive">
-                            <table className="table table-dark table-hover align-middle mb-0" style={{ backgroundColor: "#070d18" }}>
-                              <thead>
-                                <tr style={{ borderBottom: "1px solid #162234", color: "#8492a6" }}>
-                                  <th>Rank</th>
-                                  <th>Port Name</th>
-                                  <th>Suitability Status</th>
-                                  <th>Congestion Index</th>
-                                  <th>Est. Delay</th>
-                                  <th>Score</th>
-                                  <th>Operational Notes</th>
+                        <div className="mt-4">
+                          <h5 className="fw-bold mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                            Multi-Factor Alternative Port Rankings
+                          </h5>
+                          <div className="table-responsive rounded-3" style={{ border: "1px solid #e2e8f0" }}>
+                            <table className="table table-hover align-middle mb-0" style={{ backgroundColor: "#ffffff" }}>
+                              <thead style={{ backgroundColor: "#f8fafc" }}>
+                                <tr style={{ borderBottom: "2px solid #cbd5e1" }}>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Rank</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Port Name</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Suitability Status</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Congestion Index</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Est. Delay</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Score</th>
+                                  <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Operational Notes</th>
                                 </tr>
                               </thead>
                               <tbody>
@@ -833,37 +865,46 @@ const ForecastResults = () => {
                                   const isSel = alt.is_selected;
                                   return (
                                     <tr key={alt.port} style={{
-                                      backgroundColor: isRec ? "#064e3b15" : isSel ? "#1e88e515" : "transparent",
-                                      borderBottom: "1px solid #162234"
+                                      backgroundColor: isRec ? "#f0fdf4" : isSel ? "#f0f9ff" : "#ffffff",
+                                      borderBottom: "1px solid #e2e8f0"
                                     }}>
-                                      <td>
-                                        <span className={`fw-bold ${isRec ? "text-warning" : "text-white"}`}>
+                                      <td style={{ padding: "12px 14px" }}>
+                                        <span className="fw-bold" style={{ color: isRec ? "#d97706" : "#0f172a" }}>
                                           {isRec ? "🥇 #1" : `#${alt.rank}`}
                                         </span>
                                       </td>
-                                      <td>
-                                        <span className="fw-semibold text-white">{alt.port}</span>
-                                        {isRec && <span className="badge bg-warning text-dark ms-2">Recommended</span>}
-                                        {isSel && <span className="badge bg-info text-dark ms-2">Selected</span>}
+                                      <td style={{ padding: "12px 14px" }}>
+                                        <span className="fw-bold" style={{ color: "#0f172a", fontSize: "0.95rem" }}>{alt.port}</span>
+                                        {isRec && <span className="badge rounded-pill bg-warning text-dark ms-2 fw-semibold px-2 py-1">Recommended</span>}
+                                        {isSel && <span className="badge rounded-pill bg-info text-dark ms-2 fw-semibold px-2 py-1">Selected</span>}
                                       </td>
-                                      <td>
-                                        <span className={`badge px-2 py-1 ${
-                                          alt.status === "compatible" ? "bg-success text-white" :
-                                          alt.status === "special" ? "bg-warning text-dark" : "bg-danger text-white"
-                                        }`}>
-                                          {alt.status === "compatible" ? "Compatible" : alt.status === "special" ? "STS Lightering" : "Restricted"}
+                                      <td style={{ padding: "12px 14px" }}>
+                                        <span
+                                          className="badge rounded-pill px-2.5 py-1.5 fw-bold"
+                                          style={{
+                                            backgroundColor: alt.status === "compatible" ? "#dcfce7" : alt.status === "special" ? "#fef3c7" : "#fee2e2",
+                                            color: alt.status === "compatible" ? "#15803d" : alt.status === "special" ? "#b45309" : "#b91c1c",
+                                            border: `1px solid ${alt.status === "compatible" ? "#86efac" : alt.status === "special" ? "#fde68a" : "#fca5a5"}`,
+                                            fontSize: "0.8rem",
+                                          }}
+                                        >
+                                          {alt.status === "compatible" ? "✓ Compatible" : alt.status === "special" ? "⚓ STS Lightering" : "⚠ Restricted"}
                                         </span>
                                       </td>
-                                      <td>
-                                        <span className={alt.congestion_level === "Low" ? "text-success" : alt.congestion_level === "High" ? "text-danger" : "text-warning"}>
+                                      <td style={{ padding: "12px 14px" }}>
+                                        <span className="fw-bold" style={{
+                                          color: alt.congestion_level === "Low" ? "#15803d" : alt.congestion_level === "High" ? "#b91c1c" : "#b45309"
+                                        }}>
                                           {alt.congestion_index} ({alt.congestion_level})
                                         </span>
                                       </td>
-                                      <td>~{alt.estimated_delay_days} days</td>
-                                      <td>
-                                        <strong className="text-white">{alt.optimization_score}</strong>
+                                      <td style={{ padding: "12px 14px", color: "#0f172a", fontWeight: "600" }}>
+                                        ~{alt.estimated_delay_days} days
                                       </td>
-                                      <td className="small" style={{ color: "#8492a6", maxWidth: "320px" }}>
+                                      <td style={{ padding: "12px 14px" }}>
+                                        <span className="fw-bold" style={{ color: "#0284c7", fontSize: "1.05rem" }}>{alt.optimization_score}</span>
+                                      </td>
+                                      <td style={{ padding: "12px 14px", color: "#334155", fontSize: "0.88rem", maxWidth: "340px", lineHeight: "1.5" }}>
                                         {alt.reason}
                                       </td>
                                     </tr>
