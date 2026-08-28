@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import RouteMap from "../components/RouteMap";
+import { normalizeForecastResponse } from "../utils/forecastNormalizer";
 
 import handysizeImg from "../assets/screenshot-2026-08-26_18-06-21.png";
 import supramaxImg from "../assets/screenshot-2026-08-26_18-13-33.png";
@@ -45,11 +46,83 @@ function ForecastQuery() {
     duration: "short-term",
   });
 
+  const [previewData, setPreviewData] = useState(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+  const [previewError, setPreviewError] = useState(null);
+
   const selectedOrigin = originCoordinates[formData.origin];
   const selectedDestination = destinationCoordinates[formData.destination];
   const selectedVessel = vesselOptions.find((vessel) => vessel.type === formData.vesselType);
   const contractLabel = formData.duration === "short-term" ? "1 – 3 Months" : formData.duration === "mid-term" ? "4 – 12 Months" : "12+ Months";
   const forecastPeriod = useMemo(() => formData.duration === "short-term" ? "Next 30 Days" : "Next 90 Days", [formData.duration]);
+
+  // Synchronize live preview whenever route or vessel parameters change
+  useEffect(() => {
+    if (!formData.origin || !formData.destination || !formData.vesselType) {
+      setPreviewData(null);
+      setLoadingPreview(false);
+      setPreviewError(null);
+      return;
+    }
+
+    let isCancelled = false;
+    setLoadingPreview(true);
+    setPreviewError(null);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/forecast`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            origin: formData.origin,
+            destination: formData.destination,
+            vesselType: formData.vesselType,
+            cargoQuantity: formData.volume || 75000,
+            forecastPeriod,
+          }),
+        });
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch forecast preview");
+        }
+
+        const rawData = await res.json();
+        if (!isCancelled) {
+          const normalized = normalizeForecastResponse(rawData);
+          setPreviewData(normalized);
+          setLoadingPreview(false);
+        }
+      } catch (err) {
+        if (!isCancelled) {
+          console.warn("Forecast preview error:", err.message);
+          setPreviewError("Forecast unavailable");
+          setLoadingPreview(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [formData.origin, formData.destination, formData.vesselType, formData.volume, forecastPeriod]);
+
+  // Calculate dynamic mini chart bar heights from actual rate points
+  const miniBarHeights = useMemo(() => {
+    if (!previewData?.chartData || previewData.chartData.length < 5) {
+      return [25, 45, 65, 80, 95];
+    }
+    const points = previewData.chartData.slice(-5).map((p) => Number(p.projectedRate || p.historicalRate || 20));
+    const minVal = Math.min(...points) * 0.95;
+    const maxVal = Math.max(...points) * 1.05;
+    const range = maxVal - minVal || 1;
+
+    return points.map((val) => {
+      const pct = ((val - minVal) / range) * 75 + 20;
+      return Math.max(18, Math.min(96, Math.round(pct)));
+    });
+  }, [previewData]);
 
   const handleChange = (e) => {
     setFormData({
@@ -148,157 +221,70 @@ function ForecastQuery() {
                             marginBottom: "0.5rem",
                           }}
                         />
-                        <div className="fw-bold text-white">{vessel.type}</div>
-                        <small style={{ color: "#64748b" }}>
-                          {vessel.desc}
-                        </small>
+                        <div className="fw-bold text-white mb-1">
+                          {vessel.type}
+                        </div>
+                        <small style={{ color: "#8492a6" }}>{vessel.desc}</small>
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Hidden input keeps native "required" validation working
-                    even though selection happens via card click, not a <select> */}
-                <input
-                  type="hidden"
-                  name="vesselType"
-                  value={formData.vesselType}
-                  required
-                />
-
                 {/* Cargo */}
-                <div className="query-section-heading"><span>03</span><div><h4>Cargo Information</h4><small>Set the cargo type and required volume</small></div><span className="heading-icon">◇</span></div>
-
+                <div className="query-section-heading"><span>03</span><div><h4>Cargo Specifications</h4><small>Specify cargo commodity and volume</small></div><span className="heading-icon">▤</span></div>
                 <div className="row g-3 mb-4">
                   <div className="col-md-6">
-                    <label
-                      className="form-label small fw-semibold"
-                      style={{ color: "#8492a6" }}
-                    >
-                      Cargo Type
-                    </label>
-                    <select
-                      className="form-select py-2 text-white shadow-none"
-                      name="cargoType"
-                      value={formData.cargoType}
-                      onChange={handleChange}
-                      required
-                      style={{
-                        backgroundColor: "#070d18",
-                        borderColor: "#1b2a3f",
-                        cursor: "pointer",
-                      }}
-                    >
+                    <label className="form-label small" style={{ color: "#8492a6" }}>Cargo Commodity Type</label>
+                    <select className="form-select bg-dark text-white" style={{ borderColor: "#162234" }} name="cargoType" value={formData.cargoType} onChange={handleChange} required>
                       <option value="">Select Cargo</option>
-                      <option value="Iron Ore">Iron Ore</option>
-                      <option value="Coal">Coal</option>
-                      <option value="Bauxite">Bauxite</option>
-                      <option value="Limestone">Limestone</option>
-                      <option value="Fertilizer">Fertilizer</option>
-                      <option value="Steel Products">Steel Products</option>
+                      <option value="Thermal Coal">Thermal Coal</option>
+                      <option value="Coking Coal">Coking Coal</option>
+                      <option value="PCI Coal">PCI Coal</option>
+                      <option value="Anthracite Coal">Anthracite Coal</option>
                     </select>
                   </div>
-
                   <div className="col-md-6">
-                    <label
-                      className="form-label small fw-semibold"
-                      style={{ color: "#8492a6" }}
-                    >
-                      Cargo Volume (MT)
-                    </label>
-                    <input
-                      type="number"
-                      className="form-control py-2 text-white shadow-none"
-                      placeholder="example: 50000"
-                      name="volume"
-                      value={formData.volume}
-                      onChange={handleChange}
-                      required
-                      style={{
-                        backgroundColor: "#070d18",
-                        borderColor: "#1b2a3f",
-                      }}
-                    />
+                    <label className="form-label small" style={{ color: "#8492a6" }}>Cargo Parcel Size (Metric Tonnes)</label>
+                    <input className="form-control bg-dark text-white" style={{ borderColor: "#162234" }} type="number" name="volume" value={formData.volume} onChange={handleChange} placeholder="e.g. 75,000" min="5000" required />
                   </div>
                 </div>
 
                 {/* Contract Duration */}
-                <div className="query-section-heading"><span>04</span><div><h4>Contract Duration</h4><small>Choose the planning horizon for this forecast</small></div><span className="heading-icon">□</span></div>
-
-                <div className="row mb-4">
+                <div className="query-section-heading"><span>04</span><div><h4>Charter Duration & Contract Horizon</h4><small>Select short-term spot or mid-term period charter</small></div><span className="heading-icon">⏱</span></div>
+                <div className="row g-3 mb-4">
                   <div className="col-md-6">
                     <div
-                      className={`interactive-card query-duration-card rounded-4 p-3 ${formData.duration === "short-term" ? "is-selected" : ""}`}
+                      className={`interactive-card query-duration-card rounded-4 p-3 h-100 ${formData.duration === "short-term" ? "is-selected" : ""}`}
                       style={{
                         backgroundColor: "#070d18",
-                        border:
-                          formData.duration === "short-term"
-                            ? "2px solid #1e88e5"
-                            : "1px solid #1b2a3f",
+                        border: formData.duration === "short-term" ? "2px solid #1e88e5" : "1px solid #1b2a3f",
                         cursor: "pointer",
                       }}
-                      onClick={() =>
-                        setFormData({ ...formData, duration: "short-term" })
-                      }
+                      onClick={() => setFormData({ ...formData, duration: "short-term" })}
                     >
                       <div className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          style={{ cursor: "pointer" }}
-                          name="duration"
-                          value="short-term"
-                          checked={formData.duration === "short-term"}
-                          onChange={handleChange}
-                        />
-                        <label
-                          className="form-check-label fw-bold text-white"
-                          style={{ cursor: "pointer" }}
-                        >
-                          Short-Term (1 – 3 Months)
-                        </label>
+                        <input className="form-check-input" type="radio" style={{ cursor: "pointer" }} name="duration" value="short-term" checked={formData.duration === "short-term"} onChange={handleChange} />
+                        <label className="form-check-label fw-bold text-white" style={{ cursor: "pointer" }}>Short-Term Spot (1 – 3 Months)</label>
                       </div>
-                      <small className="d-block mt-1" style={{ color: "#64748b" }}>
-                        Ideal for immediate spot rate analysis and short horizon procurement decisions.
-                      </small>
+                      <small className="d-block mt-1" style={{ color: "#64748b" }}>Optimized for single voyage fixtures and immediate shipment windows.</small>
                     </div>
                   </div>
 
-                  <div className="col-md-6 mt-3 mt-md-0">
+                  <div className="col-md-6">
                     <div
-                      className={`interactive-card query-duration-card rounded-4 p-3 ${formData.duration === "mid-term" ? "is-selected" : ""}`}
+                      className={`interactive-card query-duration-card rounded-4 p-3 h-100 ${formData.duration === "mid-term" ? "is-selected" : ""}`}
                       style={{
                         backgroundColor: "#070d18",
-                        border:
-                          formData.duration === "mid-term"
-                            ? "2px solid #1e88e5"
-                            : "1px solid #1b2a3f",
+                        border: formData.duration === "mid-term" ? "2px solid #1e88e5" : "1px solid #1b2a3f",
                         cursor: "pointer",
                       }}
-                      onClick={() =>
-                        setFormData({ ...formData, duration: "mid-term" })
-                      }
+                      onClick={() => setFormData({ ...formData, duration: "mid-term" })}
                     >
                       <div className="form-check">
-                        <input
-                          className="form-check-input"
-                          type="radio"
-                          style={{ cursor: "pointer" }}
-                          name="duration"
-                          value="mid-term"
-                          checked={formData.duration === "mid-term"}
-                          onChange={handleChange}
-                        />
-                        <label
-                          className="form-check-label fw-bold text-white"
-                          style={{ cursor: "pointer" }}
-                        >
-                          Mid-Term (4 – 12 Months)
-                        </label>
+                        <input className="form-check-input" type="radio" style={{ cursor: "pointer" }} name="duration" value="mid-term" checked={formData.duration === "mid-term"} onChange={handleChange} />
+                        <label className="form-check-label fw-bold text-white" style={{ cursor: "pointer" }}>Mid-Term (4 – 12 Months)</label>
                       </div>
-                      <small className="d-block mt-1" style={{ color: "#64748b" }}>
-                        Better for strategic period chartering, hedging rate volatility, and seasonal planning.
-                      </small>
+                      <small className="d-block mt-1" style={{ color: "#64748b" }}>Better for strategic period chartering, hedging rate volatility, and seasonal planning.</small>
                     </div>
                   </div>
                 </div>
@@ -307,13 +293,135 @@ function ForecastQuery() {
             </form>
 
             <aside className="query-sidebar">
+              {/* QUICK FORECAST PREVIEW CARD */}
               <div className="query-preview-card">
-                <div className="query-preview-heading"><div><small>QUICK FORECAST PREVIEW</small><strong>{formData.vesselType ? `$21.45 / MT` : "— / MT"}</strong><span>Estimated rate · {forecastPeriod}</span></div><b>AI-Powered</b></div>
-                <div className="query-mini-chart"><span></span><span></span><span></span><span></span><span></span></div>
-                <div className="query-preview-stats"><span>90 Days<strong>{formData.vesselType ? "$24.12 / MT" : "—"}</strong></span><span>Confidence<strong>86%</strong></span><span>Trend<strong>Increasing</strong></span></div>
+                {/* 1. Loading State */}
+                {loadingPreview && (
+                  <div className="d-flex flex-column justify-content-between h-100">
+                    <div className="query-preview-heading">
+                      <div>
+                        <small>QUICK FORECAST PREVIEW</small>
+                        <strong className="d-flex align-items-center gap-2 mt-2" style={{ fontSize: "1.05rem" }}>
+                          <span className="spinner-border spinner-border-sm text-info" role="status" style={{ width: "0.85rem", height: "0.85rem" }} />
+                          Generating forecast...
+                        </strong>
+                        <span>Calculating ML rate · {forecastPeriod}</span>
+                      </div>
+                      <b>AI-Powered</b>
+                    </div>
+                    <div className="query-mini-chart opacity-50">
+                      <span style={{ height: "30%" }}></span>
+                      <span style={{ height: "50%" }}></span>
+                      <span style={{ height: "65%" }}></span>
+                      <span style={{ height: "80%" }}></span>
+                      <span style={{ height: "90%" }}></span>
+                    </div>
+                    <div className="query-preview-stats opacity-50">
+                      <span>90 Days<strong>...</strong></span>
+                      <span>Confidence<strong>...</strong></span>
+                      <span>Trend<strong>...</strong></span>
+                    </div>
+                  </div>
+                )}
+
+                {/* 2. Error State */}
+                {!loadingPreview && previewError && (
+                  <div className="d-flex flex-column justify-content-between h-100">
+                    <div className="query-preview-heading">
+                      <div>
+                        <small>QUICK FORECAST PREVIEW</small>
+                        <strong className="text-warning mt-2" style={{ fontSize: "1.05rem" }}>
+                          Forecast unavailable
+                        </strong>
+                        <span>Unable to calculate projection for this route</span>
+                      </div>
+                      <b>AI-Powered</b>
+                    </div>
+                  </div>
+                )}
+
+                {/* 3. Success State (Live ML Values) */}
+                {!loadingPreview && !previewError && previewData && previewData.estimatedRate && (
+                  <>
+                    <div className="query-preview-heading">
+                      <div>
+                        <small>QUICK FORECAST PREVIEW</small>
+                        <strong>${previewData.estimatedRate.toFixed(2)} / MT</strong>
+                        <span>Estimated rate · {forecastPeriod}</span>
+                      </div>
+                      <b>AI-Powered</b>
+                    </div>
+                    <div className="query-mini-chart">
+                      {miniBarHeights.map((h, i) => (
+                        <span key={i} style={{ height: `${h}%` }}></span>
+                      ))}
+                    </div>
+                    <div className="query-preview-stats">
+                      <span>
+                        90 Days
+                        <strong>{previewData.forecast90Rate ? `$${previewData.forecast90Rate.toFixed(2)} / MT` : "—"}</strong>
+                      </span>
+                      <span>
+                        Confidence
+                        <strong>{previewData.confidence}%</strong>
+                      </span>
+                      <span>
+                        Trend
+                        <strong>{previewData.trend}</strong>
+                      </span>
+                    </div>
+                  </>
+                )}
+
+                {/* 4. Before Forecast State (Prompt to select inputs) */}
+                {!loadingPreview && !previewError && (!previewData || !previewData.estimatedRate) && (
+                  <div className="query-preview-heading">
+                    <div>
+                      <small>QUICK FORECAST PREVIEW</small>
+                      <span style={{ fontSize: "0.82rem", color: "#e2e8f0", marginTop: "6px", display: "block" }}>
+                        Select route & vessel to see:
+                      </span>
+                      <ul className="mb-0 ps-3 mt-1" style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.75)", lineHeight: "1.5" }}>
+                        <li>Estimated freight rate</li>
+                        <li>Forecast horizon</li>
+                        <li>Model confidence</li>
+                        <li>Market trend</li>
+                      </ul>
+                    </div>
+                    <b>AI-Powered</b>
+                  </div>
+                )}
               </div>
-              <div className="query-map-card"><div className="query-card-title">Route Map <small>{formData.destination ? "Live route preview" : "Select a destination"}</small></div><RouteMap origin={formData.origin || "Australia"} destination={formData.destination || "Paradip"} originLabel={selectedOrigin?.label || "Select origin"} originCoordinates={selectedOrigin || originCoordinates.Australia} destinationCoordinates={selectedDestination || destinationCoordinates.Paradip} /></div>
-              <div className="query-summary-card"><div className="query-card-title">Selected Summary</div>{[["Origin", selectedOrigin?.label || "Not selected"], ["Destination", formData.destination || "Not selected"], ["Vessel Class", formData.vesselType || "Not selected"], ["Cargo", formData.cargoType ? `${formData.cargoType} (${formData.volume || 0} MT)` : "Not selected"], ["Contract", `${formData.duration === "short-term" ? "Short-Term" : formData.duration === "mid-term" ? "Mid-Term" : "Long-Term"} (${contractLabel})`]].map(([label, value]) => <div className="query-summary-row" key={label}><span>●</span><small>{label}</small><strong>{value}</strong></div>)}</div>
+
+              {/* Route Map Card */}
+              <div className="query-map-card">
+                <div className="query-card-title">Route Map <small>{formData.destination ? "Live route preview" : "Select a destination"}</small></div>
+                <RouteMap
+                  origin={formData.origin || "Australia"}
+                  destination={formData.destination || "Paradip"}
+                  originLabel={selectedOrigin?.label || "Select origin"}
+                  originCoordinates={selectedOrigin || originCoordinates.Australia}
+                  destinationCoordinates={selectedDestination || destinationCoordinates.Paradip}
+                />
+              </div>
+
+              {/* Summary Card */}
+              <div className="query-summary-card">
+                <div className="query-card-title">Selected Summary</div>
+                {[
+                  ["Origin", selectedOrigin?.label || "Not selected"],
+                  ["Destination", formData.destination ? `${formData.destination}, India` : "Not selected"],
+                  ["Vessel Class", formData.vesselType || "Not selected"],
+                  ["Cargo", formData.cargoType ? `${formData.cargoType} (${Number(formData.volume || 0).toLocaleString()} MT)` : "Not selected"],
+                  ["Contract", `${formData.duration === "short-term" ? "Short-Term" : "Mid-Term"} (${contractLabel})`],
+                ].map(([label, value]) => (
+                  <div className="query-summary-row" key={label}>
+                    <span>●</span>
+                    <small>{label}</small>
+                    <strong>{value}</strong>
+                  </div>
+                ))}
+              </div>
             </aside>
           </div>
         </div>
