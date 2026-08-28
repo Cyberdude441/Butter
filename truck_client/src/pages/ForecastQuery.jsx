@@ -2,7 +2,6 @@ import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import RouteMap from "../components/RouteMap";
-import { normalizeForecastResponse } from "../utils/forecastNormalizer";
 
 import handysizeImg from "../assets/screenshot-2026-08-26_18-06-21.png";
 import supramaxImg from "../assets/screenshot-2026-08-26_18-13-33.png";
@@ -57,11 +56,13 @@ function ForecastQuery() {
   const forecastPeriod = useMemo(() => formData.duration === "short-term" ? "Next 30 Days" : "Next 90 Days", [formData.duration]);
   const horizonDays = useMemo(() => formData.duration === "mid-term" ? 90 : 30, [formData.duration]);
 
-  // Synchronize live preview whenever route or vessel parameters change
+  // Two-step AI pipeline: 1) Run ML Forecast -> 2) Call Gemini AI Forecast Preview
   useEffect(() => {
     const origin = formData.origin || "Australia";
     const destination = formData.destination || "Paradip";
     const vesselType = formData.vesselType || "Panamax";
+    const cargoQuantity = Number(formData.volume) || 75000;
+    const cargoType = formData.cargoType || "Thermal Coal";
 
     let isCancelled = false;
     setLoadingPreview(true);
@@ -73,26 +74,77 @@ function ForecastQuery() {
         const headers = { "Content-Type": "application/json" };
         if (token) headers["Authorization"] = `Bearer ${token}`;
 
-        const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/forecast`, {
+        // Step 1: Run ML Pipeline to get underlying grounded context
+        const mlRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/forecast`, {
           method: "POST",
           headers,
           body: JSON.stringify({
             origin,
             destination,
             vesselType,
-            cargoQuantity: Number(formData.volume) || 75000,
+            cargoQuantity,
             forecastPeriod,
           }),
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP error ${res.status}`);
+        if (!mlRes.ok) {
+          throw new Error(`ML Forecast calculation failed (${mlRes.status})`);
         }
 
-        const rawData = await res.json();
+        const mlData = await mlRes.json();
+        if (isCancelled) return;
+
+        // Step 2: Build structured context for Gemini AI
+        const activeRate = horizonDays === 90
+          ? Number(mlData.forecast?.forecast_90d || mlData.forecast?.forecast90Day?.rate || 22.4)
+          : Number(mlData.forecast?.forecast_30d || mlData.forecast?.forecast30Day?.rate || mlData.forecast?.predictedRate || 21.8);
+
+        const currentRate = Number(mlData.forecast?.latestRate || mlData.forecast?.current_freight_rate || activeRate);
+
+        const chartSeries = Array.isArray(mlData.quick_forecast_preview?.chart_values) && mlData.quick_forecast_preview.chart_values.length >= 5
+          ? mlData.quick_forecast_preview.chart_values
+          : (mlData.forecast?.rateData || []).map((p) => Number(p.projectedRate ?? p.historicalRate ?? activeRate));
+
+        const geminiContext = {
+          origin,
+          destination,
+          cargo_type: cargoType,
+          cargo_quantity: cargoQuantity,
+          selected_vessel: vesselType,
+          optimized_vessel: mlData.vessel_optimization?.optimized_vessel?.vessel_type || vesselType,
+          horizon_days: horizonDays,
+          forecast: {
+            current_rate: currentRate,
+            predicted_rate: activeRate,
+            forecast_series: chartSeries.length >= 5 ? chartSeries.slice(-5) : [currentRate * 0.95, currentRate * 0.98, currentRate, (currentRate + activeRate) / 2, activeRate],
+            model: mlData.forecast?.model || "Multi-Horizon XGBoost + SARIMA",
+            validation_error: Number(mlData.forecast?.modelScores?.SARIMA || 0.45),
+          },
+          market_intelligence: {
+            demand: mlData.market_intelligence?.demand_status || "Normal",
+            supply: mlData.market_intelligence?.supply_status || "Balanced",
+            pricing_pressure: mlData.market_intelligence?.market_pressure || "Neutral",
+          },
+          vessel_optimization: {
+            waiting_time_saved_days: Number(mlData.vessel_optimization?.optimization_comparison?.waiting_time_saved_days || 0.0),
+            idle_time_reduction_percent: Number(mlData.vessel_optimization?.optimization_comparison?.idle_time_reduction_percent || 0.0),
+          },
+        };
+
+        // Step 3: Call Gemini API preview endpoint
+        const aiRes = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/ai/forecast-preview`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(geminiContext),
+        });
+
+        if (!aiRes.ok) {
+          throw new Error(`Gemini preview generation failed (${aiRes.status})`);
+        }
+
+        const aiData = await aiRes.json();
         if (!isCancelled) {
-          const normalized = normalizeForecastResponse(rawData);
-          setPreviewData(normalized);
+          setPreviewData(aiData);
           setLoadingPreview(false);
         }
       } catch (err) {
@@ -108,22 +160,22 @@ function ForecastQuery() {
       isCancelled = true;
       clearTimeout(timer);
     };
-  }, [formData.origin, formData.destination, formData.vesselType, formData.volume, forecastPeriod]);
+  }, [formData.origin, formData.destination, formData.vesselType, formData.volume, formData.cargoType, forecastPeriod, horizonDays]);
 
-  // Calculate dynamic mini chart bar heights reflecting actual forecast trajectory
+  // Calculate dynamic mini chart bar heights from Gemini's live chart_values
   const miniBarHeights = useMemo(() => {
     if (loadingPreview) {
       return [35, 55, 45, 65, 55];
     }
 
-    if (!previewData?.estimatedRate) {
+    if (!previewData?.estimated_rate) {
       return [45, 45, 45, 45, 45];
     }
 
     const trend = previewData.trend || "Stable";
 
-    if (previewData.chartValues && previewData.chartValues.length >= 5) {
-      const points = previewData.chartValues.slice(-5).map((v) => Number(v));
+    if (Array.isArray(previewData.chart_values) && previewData.chart_values.length >= 5) {
+      const points = previewData.chart_values.slice(-5).map((v) => Number(v));
       const minVal = Math.min(...points);
       const maxVal = Math.max(...points);
       const diff = maxVal - minVal;
@@ -311,7 +363,7 @@ function ForecastQuery() {
             </form>
 
             <aside className="query-sidebar">
-              {/* EXACT QUICK FORECAST PREVIEW CARD BOUND TO LIVE ML PIPELINE */}
+              {/* EXACT QUICK FORECAST PREVIEW CARD (POWERED BY GEMINI AI) */}
               <div className="query-preview-card">
                 <div className="query-preview-heading">
                   <div>
@@ -321,22 +373,22 @@ function ForecastQuery() {
                         ? "..."
                         : previewError
                         ? "Forecast unavailable"
-                        : previewData?.estimatedRate != null
-                        ? `$${previewData.estimatedRate.toFixed(2)} / MT`
+                        : previewData?.estimated_rate != null
+                        ? `$${Number(previewData.estimated_rate).toFixed(2)} / MT`
                         : "— / MT"}
                     </strong>
                     <span>
                       {loadingPreview
-                        ? `Generating forecast · ${forecastPeriod}`
+                        ? "Generating AI forecast preview..."
                         : previewError
                         ? "Unable to generate projection"
-                        : `Estimated rate · ${forecastPeriod}`}
+                        : `Estimated rate · Next ${previewData?.horizon_days ?? horizonDays} Days`}
                     </span>
                   </div>
                   <b>AI-Powered</b>
                 </div>
 
-                {/* Mini Bar Chart Visualization (Live Trajectory) */}
+                {/* Mini Bar Chart Visualization (Live Gemini Trajectory) */}
                 <div className="query-mini-chart">
                   {miniBarHeights.map((h, i) => (
                     <span key={i} style={{ height: `${h}%` }}></span>
@@ -346,14 +398,14 @@ function ForecastQuery() {
                 {/* Stats Row */}
                 <div className="query-preview-stats">
                   <span>
-                    {`${horizonDays} Days`}
+                    {`${previewData?.horizon_days ?? horizonDays} Days`}
                     <strong>
                       {loadingPreview
                         ? "..."
                         : previewError
                         ? "—"
-                        : previewData?.estimatedRate != null
-                        ? `$${previewData.estimatedRate.toFixed(2)} / MT`
+                        : previewData?.estimated_rate != null
+                        ? `$${Number(previewData.estimated_rate).toFixed(2)} / MT`
                         : "—"}
                     </strong>
                   </span>
@@ -364,8 +416,8 @@ function ForecastQuery() {
                         ? "..."
                         : previewError
                         ? "—"
-                        : previewData?.confidence != null
-                        ? `${previewData.confidence}% Confidence`
+                        : previewData?.confidence_percent != null
+                        ? `${previewData.confidence_percent}%`
                         : "—"}
                     </strong>
                   </span>

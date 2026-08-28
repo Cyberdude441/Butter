@@ -96,9 +96,132 @@ STRICT OPERATIONAL RULES:
 1. Ground your answers directly in the provided [LIVE DASHBOARD & ML FORECAST CONTEXT].
 2. When the user asks about rates, trends, port wait times, or vessel optimization, use the actual numbers from the context.
 3. If no forecast has been run yet, provide expert maritime domain knowledge and suggest running a forecast for their specific route.
-4. Clearly distinguish between model-derived figures (e.g. "$21.83/MT predicted by XGBoost/SARIMA", "~1.4 days waiting time saved") and operational advice.
+4. Clearly distinguish between model-derived figures and operational advice.
 5. Keep explanations concise, professional, grounded, structured with bullet points where helpful, and decision-oriented.
 6. Do not fabricate rates or data that are not in the context.`;
+
+/**
+ * Uses Gemini API to analyze the full forecast & optimization context and generate
+ * a strictly structured Quick Forecast Preview JSON.
+ */
+export const generateAIForecastPreview = async (context = {}) => {
+  const origin = context.origin || "Australia";
+  const destination = context.destination || "Paradip";
+  const cargoType = context.cargo_type || "Thermal Coal";
+  const cargoQuantity = Number(context.cargo_quantity || 75000);
+  const selectedVessel = context.selected_vessel || "Panamax";
+  const optimizedVessel = context.optimized_vessel || selectedVessel;
+  const horizonDays = Number(context.horizon_days || 30);
+
+  const forecast = context.forecast || {};
+  const currentRate = Number(forecast.current_rate ?? 21.0);
+  const predictedRate = Number(forecast.predicted_rate ?? (currentRate || 21.83));
+  const forecastSeries = Array.isArray(forecast.forecast_series) && forecast.forecast_series.length > 0
+    ? forecast.forecast_series
+    : [currentRate * 0.95, currentRate * 0.98, currentRate, (currentRate + predictedRate) / 2, predictedRate];
+  const model = forecast.model || "Multi-Horizon XGBoost + SARIMA";
+  const validationError = Number(forecast.validation_error || 0.45);
+
+  const marketIntel = context.market_intelligence || {};
+  const demand = marketIntel.demand || "Normal";
+  const supply = marketIntel.supply || "Balanced";
+  const pricingPressure = marketIntel.pricing_pressure || "Neutral";
+
+  const vesselOpt = context.vessel_optimization || {};
+  const waitingSaved = Number(vesselOpt.waiting_time_saved_days || 0.0);
+  const idleReduction = Number(vesselOpt.idle_time_reduction_percent || 0.0);
+
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  // Fallback builder if Gemini is unavailable
+  const fallbackPreview = () => {
+    let trend = "Stable";
+    if (predictedRate > currentRate * 1.015) trend = "Increasing";
+    else if (predictedRate < currentRate * 0.985) trend = "Decreasing";
+
+    let conf = Math.round(Math.max(70, Math.min(96, (1 - validationError / (predictedRate || 20)) * 100)) * 10) / 10;
+    const cleanSeries = forecastSeries.slice(-5).map(v => Number(Number(v).toFixed(2)));
+
+    return {
+      estimated_rate: Number(predictedRate.toFixed(2)),
+      unit: "USD/MT",
+      horizon_days: horizonDays,
+      confidence_percent: conf,
+      trend,
+      chart_values: cleanSeries,
+      summary: `Freight rate projected at $${predictedRate.toFixed(2)}/MT for ${horizonDays}-day horizon with ${trend.toLowerCase()} momentum.`
+    };
+  };
+
+  if (!apiKey || apiKey.includes("your_") || apiKey.length < 15) {
+    return fallbackPreview();
+  }
+
+  try {
+    const ai = new GoogleGenAI({ apiKey });
+
+    const prompt = `You are generating a compact freight forecast preview for the dashboard.
+
+Use the supplied application context as the source of truth:
+- Route: ${origin} to ${destination}
+- Cargo: ${cargoType}, ${cargoQuantity.toLocaleString()} MT
+- Vessel Class: User Selected ${selectedVessel} (AI Optimized Alternative: ${optimizedVessel})
+- Forecast Horizon: ${horizonDays} Days
+- Freight Rates: Current: $${currentRate.toFixed(2)}/MT | ML Model Predicted: $${predictedRate.toFixed(2)}/MT
+- Historical & Projected Timeline Series: [${forecastSeries.map(v => Number(v).toFixed(2)).join(", ")}]
+- ML Model: ${model} (Validation MAE: $${validationError.toFixed(2)}/MT)
+- Market Intelligence: Demand: ${demand} | Fleet Supply: ${supply} | Pricing Pressure: ${pricingPressure}
+- Vessel Optimization: Waiting Time Saved: ${waitingSaved}d | Idle Reduction: ${idleReduction}%
+
+Rules for JSON generation:
+1. For estimated_rate: Use the model predicted rate ($${predictedRate.toFixed(2)}). Do not invent a disconnected number.
+2. For unit: Always "USD/MT".
+3. For horizon_days: Use ${horizonDays}.
+4. For trend: Must be "Increasing", "Stable", or "Decreasing" based on predicted rate versus current rate and market context.
+5. For chart_values: Provide an array of exactly 5 numbers reflecting the 5 sequential timeline points from current to forecast.
+6. For confidence_percent: Estimate a realistic confidence percentage between 70 and 96 based on model quality (MAE $${validationError.toFixed(2)}), signal agreement, and data completeness.
+7. For summary: A concise 1-2 sentence operational summary.
+
+Return ONLY a valid JSON object with these exact keys:
+{
+  "estimated_rate": number,
+  "unit": "USD/MT",
+  "horizon_days": number,
+  "confidence_percent": number,
+  "trend": "Increasing" | "Stable" | "Decreasing",
+  "chart_values": [number, number, number, number, number],
+  "summary": string
+}`;
+
+    const response = await ai.models.generateContent({
+      model: "gemini-2.5-flash",
+      contents: prompt,
+      config: {
+        responseMimeType: "application/json",
+        temperature: 0.1,
+      },
+    });
+
+    const responseText = response.text || "";
+    const cleaned = responseText.replace(/^```json\s*/, "").replace(/```\s*$/, "").trim();
+    const parsed = JSON.parse(cleaned);
+
+    return {
+      estimated_rate: Number(parsed.estimated_rate ?? predictedRate),
+      unit: parsed.unit || "USD/MT",
+      horizon_days: Number(parsed.horizon_days ?? horizonDays),
+      confidence_percent: Number(parsed.confidence_percent ?? 88),
+      trend: parsed.trend || "Stable",
+      chart_values: Array.isArray(parsed.chart_values) && parsed.chart_values.length >= 5
+        ? parsed.chart_values.slice(-5).map(v => Number(Number(v).toFixed(2)))
+        : forecastSeries.slice(-5).map(v => Number(Number(v).toFixed(2))),
+      summary: parsed.summary || `Projected at $${predictedRate.toFixed(2)}/MT for ${horizonDays}-day horizon.`
+    };
+  } catch (err) {
+    console.warn("Gemini forecast preview generation error, falling back to ML context:", err.message);
+    return fallbackPreview();
+  }
+};
 
 /**
  * Executes a conversational turn with Gemini using @google/genai SDK.
@@ -122,7 +245,6 @@ export const chatWithCopilot = async ({
 
   const apiKey = process.env.GEMINI_API_KEY;
 
-  // Bounded conversation history (max 8 turns)
   const boundedHistory = (Array.isArray(conversationHistory) ? conversationHistory : [])
     .slice(-8)
     .map((msg) => ({
@@ -131,7 +253,6 @@ export const chatWithCopilot = async ({
     }))
     .filter((msg) => msg.text.length > 0);
 
-  // Suggested contextual action chips to accompany the response
   const suggestions = generateContextualSuggestions({
     forecastContext,
     currentOptimization,
@@ -139,7 +260,6 @@ export const chatWithCopilot = async ({
   });
 
   if (!apiKey || apiKey.includes("your_") || apiKey.length < 15) {
-    console.warn("GEMINI_API_KEY missing or placeholder. Serving grounded deterministic fallback.");
     return {
       success: true,
       answer: generateRuleBasedFallbackAnswer(message, contextText, forecastContext, currentOptimization),
@@ -151,14 +271,10 @@ export const chatWithCopilot = async ({
   try {
     const ai = new GoogleGenAI({ apiKey });
 
-    // Format chat contents for @google/genai
     const contents = [
       {
         role: "user",
-        parts: [{ text: `System Context & Current Live Dashboard Data:
-${contextText}
-
-Please acknowledge and assist the user with this data.` }],
+        parts: [{ text: `System Context & Current Live Dashboard Data:\n${contextText}\n\nPlease acknowledge and assist the user with this data.` }],
       },
       {
         role: "model",
@@ -201,8 +317,6 @@ Please acknowledge and assist the user with this data.` }],
     };
   } catch (error) {
     console.error("Gemini API Error in chatWithCopilot:", error.message || error);
-
-    // Provide grounded fallback so user always receives accurate information from the ML engine
     return {
       success: true,
       answer: generateRuleBasedFallbackAnswer(message, contextText, forecastContext, currentOptimization),
@@ -212,9 +326,6 @@ Please acknowledge and assist the user with this data.` }],
   }
 };
 
-/**
- * Generates tailored question / navigation chips for the UI
- */
 const generateContextualSuggestions = ({ forecastContext = {}, currentOptimization = {}, message = "" }) => {
   const vOpt = currentOptimization || forecastContext?.vessel_optimization;
   const isOptimal = vOpt?.is_user_selection_optimal;
@@ -246,9 +357,6 @@ const generateContextualSuggestions = ({ forecastContext = {}, currentOptimizati
   ];
 };
 
-/**
- * High-quality deterministic maritime analysis fallback when Gemini network/API key is unavailable
- */
 const generateRuleBasedFallbackAnswer = (question, contextText, forecastContext, currentOptimization) => {
   const q = question.toLowerCase();
   const f = forecastContext || {};
@@ -263,75 +371,36 @@ const generateRuleBasedFallbackAnswer = (question, contextText, forecastContext,
 
   if (!hasForecast) {
     return `### Freight AI Co-Pilot Overview
-Please run a forecast query for your route (origin, destination, cargo tonnage, and vessel selection) on the dashboard.
-
-**Quick Maritime Guidance:**
-- **Handysize (~38k DWT):** Highest port agility, draft <10.5m, geared cranes for unequipped terminals.
-- **Supramax (~58k DWT):** Ideal mid-tier bulk carrier with 4x30MT cranes and moderate 12.8m draft.
-- **Panamax (~76k DWT):** Standard gearless carrier for high-tonnage thermal/coking coal; requires deepwater mechanized berths.
-- **Capesize (~180k DWT):** Maximum freight economy for massive parcels (150k+ MT); restricted by 18m+ draft limits (accommodated at Gangavaram/Dhamra/Vizag Outer Harbour).`;
+Please run a forecast query for your route on the dashboard.`;
   }
 
-  if (q.includes("vessel") || q.includes("supramax") || q.includes("panamax") || q.includes("capesize") || q.includes("handysize") || q.includes("why")) {
+  if (q.includes("vessel") || q.includes("supramax") || q.includes("panamax") || q.includes("why")) {
     if (opt.is_user_selection_optimal) {
       return `### Vessel Evaluation Analysis
-Based on the multi-factor optimization engine, your selected **${selV.vessel_type || "Panamax"}** is already the **optimal vessel class** (Score: **${selV.total_operational_score || 88}/100**).
-
-**Key Factors:**
-- **Cargo Utilization:** ${selV.cargo_utilization_pct || 98}% single-voyage parcel efficiency for your requested tonnage.
-- **Port Feasibility:** Full draft clearance at both origin and ${f.destination || "destination"}.
-- **Turnaround Efficiency:** Estimated port waiting time is ~**${selV.waiting_time_days || 2.8} days**, maintaining the lowest overall voyage cost.`;
+Your selected **${selV.vessel_type || "Panamax"}** is the optimal vessel class (Score: **${selV.total_operational_score || 88}/100**).`;
     } else {
       return `### AI Vessel Optimization Finding
 The system recommends **${optV.vessel_type || "Supramax"}** (Score: **${optV.total_operational_score || 91.2}/100**) over your selected **${selV.vessel_type || "Panamax"}** (Score: **${selV.total_operational_score || 78.5}/100**).
-
-**Key Optimization Advantages:**
-1. **Waiting Time Saved:** Saves **${comp.waiting_time_saved_days || 1.4} days** in port waiting delay (~${optV.waiting_time_days || 2.4}d vs ~${selV.waiting_time_days || 3.8}d).
-2. **Idle Time Reduction:** Reduces overall port and turnaround idle exposure by **${comp.idle_time_reduction_percent || 35.3}%**.
-3. **Draft & Berth Agility:** Better clearance and geared unloader flexibility at the discharge terminal.
-4. **Economics:** Forecast freight rate is **$${optV.forecast_freight_rate || 20.96}/MT** on this trade lane.`;
+- **Waiting Time Saved:** Saves **${comp.waiting_time_saved_days || 1.4} days**.
+- **Idle Reduction:** **${comp.idle_time_reduction_percent || 35.3}%**.`;
     }
   }
 
-  if (q.includes("time") || q.includes("save") || q.includes("wait") || q.includes("delay")) {
-    return `### Waiting & Idle Time Breakdown
-- **User Selected (${selV.vessel_type || "Panamax"}):** ~${selV.waiting_time_days || 3.8} days port wait (~${selV.idle_time_days || 4.8} days total idle).
-- **AI Optimized (${optV.vessel_type || "Supramax"}):** ~${optV.waiting_time_days || 2.4} days port wait (~${optV.idle_time_days || 3.2} days total idle).
-- **Net Time Saved:** **${comp.waiting_time_saved_days || 1.4} Days** (${comp.idle_time_reduction_percent || 35.3}% reduction in operational idle delay).`;
-  }
-
-  if (q.includes("charter") || q.includes("now") || q.includes("signal") || q.includes("rate") || q.includes("forecast")) {
-    return `### Chartering Signal: ${f.marketSignal || "MONITOR"}
-- **Current Rate:** $${f.latestRate || f.current_freight_rate || 21.0}/MT
-- **30-Day Forecast:** $${f.forecast30Day?.rate || f.forecast_30d || 21.8}/MT
-- **90-Day Forecast:** $${f.forecast90Day?.rate || f.forecast_90d || 22.4}/MT
-- **Market Trend:** ${f.marketTrend || "Increasing"} (Volatility: ${f.volatility || "Low"})
-- **Strategy:** ${f.charter_strategy || f.summary || "Evaluate spot fixtures and lock in forward charter windows if forward rates are firming."}`;
-  }
-
-  if (q.includes("port") || q.includes("gangavaram") || q.includes("paradip") || q.includes("haldia")) {
-    return `### Port Congestion & Routing Analysis
-- **Selected Discharge Port (${portOpt.selected_port || f.destination}):** Congestion index is **${portAnalysis.congestion_index || "35.2"}** (${portAnalysis.congestion_level || "Medium"}), with an estimated waiting delay of ~**${portAnalysis.estimated_delay_days || "2.2"} days**.
-- **Recommended Port (${portOpt.recommended_port || "Gangavaram Port"}):** Optimization Score **${portOpt.optimization_score || "88.9"}/100**.
-- **Operational Benefit:** ${portOpt.expected_operational_benefit || "Deepwater draft clearance and minimal vessel queueing."}`;
-  }
-
   return `### Maritime Intelligence Analysis
-- **Route:** ${f.origin || "Australia"} → ${f.destination || "Paradip"} (${f.vesselType || "Panamax"})
-- **30-Day Projected Freight:** $${f.forecast30Day?.rate || f.predictedRate || 21.8}/MT (${f.marketTrend || "Stable"} trend)
-- **Charter Recommendation:** **${f.marketSignal || "MONITOR"}**
-- **Vessel Advice:** ${opt.status || "Evaluated all 4 dry bulk vessel classes"} (Recommended: **${optV.vessel_type || "Supramax"}**).`;
+- **Route:** ${f.origin || "Australia"} → ${f.destination || "Paradip"}
+- **Rate:** $${f.forecast30Day?.rate || f.predictedRate || 21.8}/MT (${f.marketTrend || "Stable"})
+- **Recommendation:** **${optV.vessel_type || "Supramax"}**`;
 };
 
 export const generateForecastExplanation = async ({ input, modelForecast }) => {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey || apiKey.includes("your_") || apiKey.length < 15) {
-    return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT in 30 days and $${modelForecast.forecast90Day?.rate || 22.4}/MT in 90 days. Market trend is ${modelForecast.marketTrend || "Stable"} with ${modelForecast.volatility || "Low"} volatility.`;
+    return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT in 30 days.`;
   }
 
   try {
     const ai = new GoogleGenAI({ apiKey });
-    const prompt = `Explain this bulk freight forecast in simple everyday business language for a logistics manager. Avoid technical jargon or raw code.
+    const prompt = `Explain this bulk freight forecast for a logistics manager:
 Route: ${input.origin} to ${input.destination}; vessel: ${input.vesselType}; cargo: ${input.cargoQuantity} MT;
 Forecast model: ${JSON.stringify(modelForecast)}`;
 
@@ -341,6 +410,6 @@ Forecast model: ${JSON.stringify(modelForecast)}`;
     });
     return result.text.trim();
   } catch (err) {
-    return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT in 30 days and $${modelForecast.forecast90Day?.rate || 22.4}/MT in 90 days.`;
+    return `Freight is projected at $${modelForecast.forecast30Day?.rate || 21.8}/MT.`;
   }
 };

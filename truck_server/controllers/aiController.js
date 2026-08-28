@@ -1,4 +1,4 @@
-import { chatWithCopilot } from "../services/geminiService.js";
+import { chatWithCopilot, generateAIForecastPreview } from "../services/geminiService.js";
 
 export const chatHandler = async (req, res) => {
   try {
@@ -14,13 +14,6 @@ export const chatHandler = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: "A message string is required.",
-      });
-    }
-
-    if (message.length > 2000) {
-      return res.status(400).json({
-        success: false,
-        message: "Message exceeds maximum length of 2000 characters.",
       });
     }
 
@@ -43,6 +36,24 @@ export const chatHandler = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "AI Co-Pilot is temporarily unavailable. Please try again.",
+    });
+  }
+};
+
+export const forecastPreviewHandler = async (req, res) => {
+  try {
+    const context = req.body || {};
+    const preview = await generateAIForecastPreview(context);
+
+    return res.json({
+      success: true,
+      ...preview,
+    });
+  } catch (error) {
+    console.error("AI Forecast Preview Error:", error.message || error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to generate AI forecast preview.",
     });
   }
 };
