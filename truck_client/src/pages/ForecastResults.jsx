@@ -4,6 +4,7 @@ import Navbar from "../components/Navbar";
 import RouteMap from "../components/RouteMap";
 import { ports, vesselTypes } from "../data/Ports";
 import RateChart from "./RateChart";
+import AICoPilotDrawer from "../components/AICoPilotDrawer";
 
 // Reuse the same vessel images used on the query page
 import handysizeImg from "../assets/screenshot-2026-08-26_18-06-21.png";
@@ -204,6 +205,7 @@ const ForecastResults = () => {
   }, [origin, destination]);
 
   // MARKET / RATE ANALYSIS
+  const [isCopilotOpen, setIsCopilotOpen] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [loadingAnalysis, setLoadingAnalysis] = useState(true);
   const [analysisError, setAnalysisError] = useState(null);
@@ -1717,7 +1719,38 @@ const ForecastResults = () => {
           </div>
         </div>
       </section>
-      </div>
+      
+      {/* Floating AI Co-Pilot Trigger Button */}
+      <button
+        type="button"
+        className="btn position-fixed d-flex align-items-center gap-2 rounded-pill shadow-lg border-0"
+        style={{
+          bottom: "28px",
+          right: "28px",
+          backgroundColor: "#0284c7",
+          color: "#ffffff",
+          padding: "11px 20px",
+          fontWeight: "600",
+          fontSize: "0.92rem",
+          zIndex: 1020,
+          boxShadow: "0 10px 30px rgba(2, 132, 199, 0.45)",
+          letterSpacing: "0.01em",
+        }}
+        onClick={() => setIsCopilotOpen(true)}
+      >
+        <span className="fs-6">✦</span>
+        <span>Ask Freight AI Co-Pilot</span>
+      </button>
+
+      {/* AI Co-Pilot Drawer Panel */}
+      <AICoPilotDrawer
+        isOpen={isCopilotOpen}
+        onClose={() => setIsCopilotOpen(false)}
+        forecastContext={analysis?.forecast ? { ...analysis.forecast, ...analysis } : analysis}
+        currentRoute={{ origin, destination, vesselType, cargoQuantity }}
+      />
+
+    </div>
     </main>
   );
 };

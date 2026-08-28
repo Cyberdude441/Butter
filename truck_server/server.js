@@ -8,6 +8,7 @@ import { fileURLToPath } from "node:url";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import forecastRoutes from "./routes/forecast.js";
+import aiRoutes from "./routes/ai.js";
 
 const serverDirectory = path.dirname(fileURLToPath(import.meta.url));
 dotenv.config({ path: path.join(serverDirectory, ".env") });
@@ -24,6 +25,7 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/forecast", forecastRoutes);
+app.use("/api/ai", aiRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to Intelligent Freight Forecasting Server");
@@ -42,4 +44,4 @@ process.on("unhandledRejection", (reason) => {
 
 process.on("uncaughtException", (err) => {
   console.error("Uncaught Exception:", err);
-});
+});
