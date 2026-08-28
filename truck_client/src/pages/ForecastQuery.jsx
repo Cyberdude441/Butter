@@ -55,6 +55,7 @@ function ForecastQuery() {
   const selectedVessel = vesselOptions.find((vessel) => vessel.type === formData.vesselType);
   const contractLabel = formData.duration === "short-term" ? "1 – 3 Months" : formData.duration === "mid-term" ? "4 – 12 Months" : "12+ Months";
   const forecastPeriod = useMemo(() => formData.duration === "short-term" ? "Next 30 Days" : "Next 90 Days", [formData.duration]);
+  const horizonDays = useMemo(() => formData.duration === "mid-term" ? 90 : 30, [formData.duration]);
 
   // Synchronize live preview whenever route or vessel parameters change
   useEffect(() => {
@@ -108,21 +109,42 @@ function ForecastQuery() {
     };
   }, [formData.origin, formData.destination, formData.vesselType, formData.volume, forecastPeriod]);
 
-  // Calculate dynamic mini chart bar heights from actual rate points
+  // Calculate dynamic mini chart bar heights reflecting actual forecast trajectory
   const miniBarHeights = useMemo(() => {
-    if (!previewData?.chartData || previewData.chartData.length < 5) {
-      return [25, 45, 65, 80, 95];
+    if (loadingPreview) {
+      return [35, 55, 45, 65, 55];
     }
-    const points = previewData.chartData.slice(-5).map((p) => Number(p.projectedRate || p.historicalRate || 20));
-    const minVal = Math.min(...points) * 0.95;
-    const maxVal = Math.max(...points) * 1.05;
-    const range = maxVal - minVal || 1;
 
-    return points.map((val) => {
-      const pct = ((val - minVal) / range) * 75 + 20;
-      return Math.max(18, Math.min(96, Math.round(pct)));
-    });
-  }, [previewData]);
+    if (!previewData?.estimatedRate) {
+      // Neutral initial placeholder bars
+      return [45, 45, 45, 45, 45];
+    }
+
+    const trend = previewData.trend || "Stable";
+
+    if (previewData.chartData && previewData.chartData.length >= 5) {
+      const points = previewData.chartData.slice(-5).map((p) => {
+        const val = Number(p.projectedRate ?? p.historicalRate ?? previewData.estimatedRate ?? 20);
+        return isNaN(val) ? 20 : val;
+      });
+
+      const minVal = Math.min(...points);
+      const maxVal = Math.max(...points);
+      const diff = maxVal - minVal;
+
+      if (diff > 0.1) {
+        return points.map((val) => Math.round(25 + ((val - minVal) / diff) * 68));
+      }
+    }
+
+    if (trend === "Increasing") {
+      return [28, 45, 62, 78, 94];
+    }
+    if (trend === "Decreasing") {
+      return [94, 78, 62, 45, 28];
+    }
+    return [55, 58, 56, 59, 57];
+  }, [previewData, loadingPreview]);
 
   const handleChange = (e) => {
     setFormData({
@@ -293,104 +315,79 @@ function ForecastQuery() {
             </form>
 
             <aside className="query-sidebar">
-              {/* QUICK FORECAST PREVIEW CARD */}
+              {/* EXACT QUICK FORECAST PREVIEW CARD (CONNECTED TO LIVE ML PIPELINE) */}
               <div className="query-preview-card">
-                {/* 1. Loading State */}
-                {loadingPreview && (
-                  <div className="d-flex flex-column justify-content-between h-100">
-                    <div className="query-preview-heading">
-                      <div>
-                        <small>QUICK FORECAST PREVIEW</small>
-                        <strong className="d-flex align-items-center gap-2 mt-2" style={{ fontSize: "1.05rem" }}>
-                          <span className="spinner-border spinner-border-sm text-info" role="status" style={{ width: "0.85rem", height: "0.85rem" }} />
-                          Generating forecast...
-                        </strong>
-                        <span>Calculating ML rate · {forecastPeriod}</span>
-                      </div>
-                      <b>AI-Powered</b>
-                    </div>
-                    <div className="query-mini-chart opacity-50">
-                      <span style={{ height: "30%" }}></span>
-                      <span style={{ height: "50%" }}></span>
-                      <span style={{ height: "65%" }}></span>
-                      <span style={{ height: "80%" }}></span>
-                      <span style={{ height: "90%" }}></span>
-                    </div>
-                    <div className="query-preview-stats opacity-50">
-                      <span>90 Days<strong>...</strong></span>
-                      <span>Confidence<strong>...</strong></span>
-                      <span>Trend<strong>...</strong></span>
-                    </div>
+                <div className="query-preview-heading">
+                  <div>
+                    <small>QUICK FORECAST PREVIEW</small>
+                    <strong>
+                      {loadingPreview
+                        ? "..."
+                        : previewError
+                        ? "Forecast unavailable"
+                        : previewData?.estimatedRate
+                        ? `$${previewData.estimatedRate.toFixed(2)} / MT`
+                        : "— / MT"}
+                    </strong>
+                    <span>
+                      {loadingPreview
+                        ? `Generating forecast · ${forecastPeriod}`
+                        : previewError
+                        ? "Unable to generate projection"
+                        : `Estimated rate · ${forecastPeriod}`}
+                    </span>
                   </div>
-                )}
+                  <b>AI-Powered</b>
+                </div>
 
-                {/* 2. Error State */}
-                {!loadingPreview && previewError && (
-                  <div className="d-flex flex-column justify-content-between h-100">
-                    <div className="query-preview-heading">
-                      <div>
-                        <small>QUICK FORECAST PREVIEW</small>
-                        <strong className="text-warning mt-2" style={{ fontSize: "1.05rem" }}>
-                          Forecast unavailable
-                        </strong>
-                        <span>Unable to calculate projection for this route</span>
-                      </div>
-                      <b>AI-Powered</b>
-                    </div>
-                  </div>
-                )}
+                {/* Mini Bar Chart Visualization (Live Trajectory) */}
+                <div className="query-mini-chart">
+                  {miniBarHeights.map((h, i) => (
+                    <span key={i} style={{ height: `${h}%` }}></span>
+                  ))}
+                </div>
 
-                {/* 3. Success State (Live ML Values) */}
-                {!loadingPreview && !previewError && previewData && previewData.estimatedRate && (
-                  <>
-                    <div className="query-preview-heading">
-                      <div>
-                        <small>QUICK FORECAST PREVIEW</small>
-                        <strong>${previewData.estimatedRate.toFixed(2)} / MT</strong>
-                        <span>Estimated rate · {forecastPeriod}</span>
-                      </div>
-                      <b>AI-Powered</b>
-                    </div>
-                    <div className="query-mini-chart">
-                      {miniBarHeights.map((h, i) => (
-                        <span key={i} style={{ height: `${h}%` }}></span>
-                      ))}
-                    </div>
-                    <div className="query-preview-stats">
-                      <span>
-                        90 Days
-                        <strong>{previewData.forecast90Rate ? `$${previewData.forecast90Rate.toFixed(2)} / MT` : "—"}</strong>
-                      </span>
-                      <span>
-                        Confidence
-                        <strong>{previewData.confidence}%</strong>
-                      </span>
-                      <span>
-                        Trend
-                        <strong>{previewData.trend}</strong>
-                      </span>
-                    </div>
-                  </>
-                )}
-
-                {/* 4. Before Forecast State (Prompt to select inputs) */}
-                {!loadingPreview && !previewError && (!previewData || !previewData.estimatedRate) && (
-                  <div className="query-preview-heading">
-                    <div>
-                      <small>QUICK FORECAST PREVIEW</small>
-                      <span style={{ fontSize: "0.82rem", color: "#e2e8f0", marginTop: "6px", display: "block" }}>
-                        Select route & vessel to see:
-                      </span>
-                      <ul className="mb-0 ps-3 mt-1" style={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.75)", lineHeight: "1.5" }}>
-                        <li>Estimated freight rate</li>
-                        <li>Forecast horizon</li>
-                        <li>Model confidence</li>
-                        <li>Market trend</li>
-                      </ul>
-                    </div>
-                    <b>AI-Powered</b>
-                  </div>
-                )}
+                {/* Stats Row */}
+                <div className="query-preview-stats">
+                  <span>
+                    {`${horizonDays} Days`}
+                    <strong>
+                      {loadingPreview
+                        ? "..."
+                        : previewError
+                        ? "—"
+                        : formData.duration === "mid-term" && previewData?.forecast90Rate
+                        ? `$${previewData.forecast90Rate.toFixed(2)} / MT`
+                        : previewData?.estimatedRate
+                        ? `$${previewData.estimatedRate.toFixed(2)} / MT`
+                        : "—"}
+                    </strong>
+                  </span>
+                  <span>
+                    Confidence
+                    <strong>
+                      {loadingPreview
+                        ? "..."
+                        : previewError
+                        ? "—"
+                        : previewData?.confidence != null
+                        ? `${previewData.confidence}% Confidence`
+                        : "—"}
+                    </strong>
+                  </span>
+                  <span>
+                    Trend
+                    <strong>
+                      {loadingPreview
+                        ? "..."
+                        : previewError
+                        ? "—"
+                        : previewData?.trend
+                        ? previewData.trend
+                        : "—"}
+                    </strong>
+                  </span>
+                </div>
               </div>
 
               {/* Route Map Card */}
@@ -405,7 +402,7 @@ function ForecastQuery() {
                 />
               </div>
 
-              {/* Summary Card */}
+              {/* Selected Summary Card */}
               <div className="query-summary-card">
                 <div className="query-card-title">Selected Summary</div>
                 {[
