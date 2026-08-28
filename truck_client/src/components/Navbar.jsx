@@ -16,6 +16,15 @@ const Navbar = () => {
     document.getElementById("features")?.scrollIntoView({ behavior: "smooth" });
   };
 
+  const handleSolutionsClick = (event) => {
+    event.preventDefault();
+    if (location.pathname !== "/") {
+      navigate("/#workflow");
+      return;
+    }
+    document.getElementById("workflow")?.scrollIntoView({ behavior: "smooth" });
+  };
+
   // Safe JSON parsing to prevent crashes
   const getUserData = () => {
     try {
@@ -56,8 +65,8 @@ const Navbar = () => {
         </Link>
 
         {/* Mobile Toggle Button */}
-          <button
-            className="navbar-toggler border-0 shadow-none"
+        <button
+          className="navbar-toggler border-0 shadow-none"
           type="button"
           data-bs-toggle="collapse"
           data-bs-target="#navbarContent"
@@ -70,7 +79,7 @@ const Navbar = () => {
 
         {/* Collapsible Wrapper */}
         <div className="collapse navbar-collapse" id="navbarContent">
-          {/* Centered Navigation Links */}
+          {/* Centered Navigation Links (Home | Features | Solutions) */}
           <ul className="navbar-nav mx-auto mb-3 mb-lg-0 gap-lg-3 align-items-lg-center">
             <li className="nav-item">
               <NavLink to="/" className="nav-link text-white-50">
@@ -85,20 +94,8 @@ const Navbar = () => {
             </li>
 
             <li className="nav-item">
-              <a className="nav-link text-white-50" href="#workflow">
+              <a className="nav-link text-white-50" href="#workflow" onClick={handleSolutionsClick}>
                 Solutions
-              </a>
-            </li>
-
-            <li className="nav-item">
-              <NavLink to="/about" className="nav-link text-white-50">
-                About
-              </NavLink>
-            </li>
-
-            <li className="nav-item">
-              <a className="nav-link text-white-50" href="mailto:hello@butterfreight.com">
-                Contact
               </a>
             </li>
           </ul>

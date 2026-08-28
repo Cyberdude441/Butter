@@ -1,6 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 const About = () => {
   const navigate = useNavigate();
@@ -445,42 +446,7 @@ const About = () => {
       </section>
 
       {/* FOOTER */}
-      <footer
-        className="py-4"
-        style={{
-          backgroundColor: "#050a10",
-          borderTop: "1px solid #162234",
-        }}
-      >
-        <div className="container">
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <small style={{ color: "#64748b" }}>
-              © 2026 Intelligent Freight Forecasting System
-            </small>
-
-            <div className="d-flex gap-4">
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Privacy
-              </small>
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Terms
-              </small>
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Contact
-              </small>
-            </div>
-          </div>
-        </div>
-      </footer>
+      <Footer />
     </main>
   );
 };

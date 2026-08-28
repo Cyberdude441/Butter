@@ -144,9 +144,39 @@ hr { border-color: #d9ded4 !important; opacity: 1; }
 .home-page .intelligence-cta { background: linear-gradient(110deg, #e4f2e8, #fffdf8) !important; border-color: #b8d4c1 !important; }
 .home-page footer { background: #062b3e !important; color: #fff !important; }
 .home-page footer small { color: rgba(255,255,255,.7) !important; }
-.home-page .trusted-band { position: relative; z-index: 2; background: #062b3e; color: #fffdf8; border-top: 1px solid rgba(255,255,255,.12); border-bottom: 1px solid rgba(255,255,255,.12); }
-.home-page .trusted-band small { color: rgba(255,255,255,.8); font-size: .72rem; }
-.home-page .trusted-band strong { color: #fffdf8; font-family: Georgia, serif; font-size: 1.1rem; opacity: .9; }
+.home-page .trusted-band {
+  position: relative;
+  z-index: 2;
+  background: #092226 !important;
+  color: #f8fafc !important;
+  border-top: 1px solid rgba(214, 168, 79, 0.28) !important;
+  border-bottom: 1px solid rgba(214, 168, 79, 0.28) !important;
+}
+.home-page .trusted-band small {
+  color: #94a3b8 !important;
+  font-size: 0.75rem;
+  letter-spacing: 0.04em;
+}
+.home-page .trusted-band strong,
+.home-page .trusted-client {
+  color: #f1f5f9 !important;
+  font-family: Georgia, serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  opacity: 1 !important;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+.home-page .trusted-band strong:hover,
+.home-page .trusted-client:hover {
+  color: #d6a84f !important;
+  transform: translateY(-1px);
+  cursor: default;
+}
+.footer-link:hover {
+  color: #d6a84f !important;
+}
 
 /* Navigation contrast layer; kept last so older inline theme rules cannot hide labels. */
 .home-page > .navbar .navbar-brand,

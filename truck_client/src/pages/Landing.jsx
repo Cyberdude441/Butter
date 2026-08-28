@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 import RouteMap from "../components/RouteMap";
 import panamaxImage from "../assets/screenshot-2026-08-26_18-14-46.png";
 
@@ -433,50 +434,35 @@ const Home = () => {
         </div>
       </section>
 
-      <section className="trusted-band py-3">
-        <div className="container d-flex flex-wrap align-items-center justify-content-between gap-3">
-          <small>Trusted by charterers and logistics teams</small>
-          <strong>adani</strong><strong>JSW</strong><strong>vedanta</strong><strong>AM/NS INDIA</strong><strong>Maithan Alloys</strong>
+      {/* IMPROVED BRAND-CONSISTENT TRUSTED BY CLIENT LOGO SECTION */}
+      <section className="trusted-band py-4">
+        <div className="container d-flex flex-wrap align-items-center justify-content-between gap-4">
+          <div className="d-flex align-items-center gap-2">
+            <span
+              style={{
+                width: "8px",
+                height: "8px",
+                borderRadius: "50%",
+                backgroundColor: "#d6a84f",
+                display: "inline-block",
+              }}
+            ></span>
+            <small style={{ color: "#8da197", textTransform: "uppercase", letterSpacing: "0.04em", fontSize: "0.75rem", fontWeight: "600" }}>
+              Trusted by charterers and logistics teams
+            </small>
+          </div>
+          <div className="d-flex flex-wrap align-items-center gap-4 gap-lg-5">
+            <strong className="trusted-client">adani</strong>
+            <strong className="trusted-client">JSW</strong>
+            <strong className="trusted-client">vedanta</strong>
+            <strong className="trusted-client">AM/NS INDIA</strong>
+            <strong className="trusted-client">Maithan Alloys</strong>
+          </div>
         </div>
       </section>
 
-      {/* FOOTER */}
-      <footer
-        className="py-4"
-        style={{
-          backgroundColor: "#050a10",
-          borderTop: "1px solid #162234",
-        }}
-      >
-        <div className="container">
-          <div className="d-flex justify-content-between align-items-center flex-wrap gap-3">
-            <small style={{ color: "#64748b" }}>
-              © 2026 Intelligent Freight Forecasting System
-            </small>
-
-            <div className="d-flex gap-4">
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Privacy
-              </small>
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Terms
-              </small>
-              <small
-                style={{ color: "#8492a6", cursor: "pointer" }}
-                className="hover-opacity"
-              >
-                Contact
-              </small>
-            </div>
-          </div>
-        </div>
-      </footer>
+      {/* REUSABLE STRUCTURED FOOTER */}
+      <Footer />
     </main>
   );
 };
