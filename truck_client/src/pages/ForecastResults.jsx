@@ -1125,13 +1125,16 @@ const ForecastResults = () => {
                           </div>
 
                           <span
-                            className="badge rounded-pill px-3 py-2 fw-semibold"
+                            className="badge rounded-pill px-3 py-1.5 fw-bold"
                             style={{
-                              backgroundColor: "#064e3b",
-                              color: "#34d399",
+                              backgroundColor: "#dcfce7",
+                              color: "#15803d",
+                              border: "1px solid #86efac",
+                              fontSize: "0.82rem",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                             }}
                           >
-                            Compatible
+                            ✓ Compatible
                           </span>
                         </div>
 
@@ -1219,13 +1222,16 @@ const ForecastResults = () => {
                           </div>
 
                           <span
-                            className="badge rounded-pill px-3 py-2 fw-semibold"
+                            className="badge rounded-pill px-3 py-1.5 fw-bold"
                             style={{
-                              backgroundColor: "#450a0a",
-                              color: "#f87171",
+                              backgroundColor: "#fee2e2",
+                              color: "#b91c1c",
+                              border: "1px solid #fca5a5",
+                              fontSize: "0.82rem",
+                              boxShadow: "0 1px 2px rgba(0,0,0,0.05)",
                             }}
                           >
-                            Restricted
+                            ⚠ Restricted
                           </span>
                         </div>
 
