@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation, Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
 import Footer from "../components/Footer";
 import RouteMap from "../components/RouteMap";
@@ -10,13 +10,89 @@ const homeDestinationCoordinates = { lat: 20.2648, lng: 86.6947 };
 
 const Home = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [selectedFeature, setSelectedFeature] = useState(null);
 
+  // Contact Form State
+  const [contactForm, setContactForm] = useState({
+    name: "",
+    email: "",
+    organization: "",
+    tradeLane: "Australia (Newcastle) -> Paradip",
+    message: "",
+  });
+  const [contactLoading, setContactLoading] = useState(false);
+  const [contactSuccess, setContactSuccess] = useState(null);
+  const [contactError, setContactError] = useState(null);
+
+  // Smooth scroll handler on hash change
   useEffect(() => {
-    if (window.location.hash === "#features") {
-      window.setTimeout(() => document.getElementById("features")?.scrollIntoView({ behavior: "smooth" }), 0);
+    if (location.hash) {
+      const id = location.hash.replace("#", "");
+      window.setTimeout(() => {
+        const el = document.getElementById(id);
+        if (el) el.scrollIntoView({ behavior: "smooth" });
+      }, 50);
     }
-  }, []);
+  }, [location.hash]);
+
+  const handleContactChange = (e) => {
+    setContactForm({
+      ...contactForm,
+      [e.target.name]: e.target.value,
+    });
+    if (contactError) setContactError(null);
+  };
+
+  const handleContactSubmit = async (e) => {
+    e.preventDefault();
+    setContactLoading(true);
+    setContactError(null);
+    setContactSuccess(null);
+
+    // Validation
+    if (!contactForm.name.trim()) {
+      setContactError("Please enter your full name.");
+      setContactLoading(false);
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactForm.email.trim())) {
+      setContactError("Please enter a valid work email address.");
+      setContactLoading(false);
+      return;
+    }
+    if (!contactForm.message.trim()) {
+      setContactError("Please enter your inquiry details or question.");
+      setContactLoading(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_URL || "http://localhost:7000"}/api/contact`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(contactForm),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.message || "Failed to submit inquiry.");
+      }
+
+      setContactSuccess(data.message || "Thank you! Your inquiry has been sent to our chartering desk.");
+      setContactForm({
+        name: "",
+        email: "",
+        organization: "",
+        tradeLane: "Australia (Newcastle) -> Paradip",
+        message: "",
+      });
+    } catch (err) {
+      setContactError(err.message || "Network error. Please try again or email support@butterfreight.com");
+    } finally {
+      setContactLoading(false);
+    }
+  };
 
   return (
     <main
@@ -29,6 +105,7 @@ const Home = () => {
       <section
         className="hero-section py-5"
         style={{ backgroundColor: "#070d18" }}
+        id="home"
       >
         <div className="hero-particles" aria-hidden="true">
           <span></span><span></span><span></span><span></span><span></span><span></span>
@@ -72,7 +149,7 @@ const Home = () => {
                     border: "1px solid #1b2a3f",
                   }}
                 >
-                  <span>View Demo</span><span className="action-arrow" aria-hidden="true">↘</span>
+                  <span>Explore Features</span><span className="action-arrow" aria-hidden="true">↘</span>
                 </button>
               </div>
 
@@ -323,7 +400,7 @@ const Home = () => {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
+      {/* HOW IT WORKS / SOLUTIONS */}
       <section
         className="py-5"
         style={{
@@ -331,14 +408,15 @@ const Home = () => {
           borderTop: "1px solid #162234",
           borderBottom: "1px solid #162234",
         }}
+        id="workflow"
       >
-        <div className="container py-4" id="workflow">
+        <div className="container py-4">
           <div className="text-center mb-5">
             <small
               className="text-uppercase fw-bold tracking-wider"
               style={{ color: "#38bdf8", fontSize: "0.75rem" }}
             >
-              WORKFLOW
+              SOLUTIONS WORKFLOW
             </small>
 
             <h2 className="fw-bold mt-2 text-white">
@@ -388,53 +466,257 @@ const Home = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-5" style={{ backgroundColor: "#070d18" }}>
+      {/* OUR MISSION SECTION */}
+      <section
+        className="py-5"
+        style={{ backgroundColor: "#070d18", borderBottom: "1px solid #162234" }}
+        id="mission"
+      >
         <div className="container py-4">
-          <div
-            className="rounded-4 p-5 text-white"
-            style={{
-              backgroundColor: "#0b1320",
-              border: "1px solid #1e88e5",
-              backgroundImage:
-                "linear-gradient(135deg, rgba(30,136,229,0.1), rgba(11,19,32,1))",
-            }}
-          >
-            <div className="row align-items-center">
-              <div className="col-lg-8">
-                <small
-                  className="text-uppercase fw-bold tracking-wider"
-                  style={{ color: "#38bdf8", fontSize: "0.75rem" }}
-                >
-                  BULK FREIGHT INTELLIGENCE
-                </small>
-
-                <h2 className="fw-bold mt-2 text-white">
-                  Make proactive chartering decisions backed by freight
-                  analytics.
-                </h2>
-
-                <p className="mb-0" style={{ color: "#8492a6" }}>
-                  Built for logistics managers and procurement teams handling
-                  overseas bulk cargo imports into India’s East Coast.
-                </p>
-              </div>
-
-              <div className="col-lg-4 text-lg-end mt-4 mt-lg-0">
-                <button
-                  className="btn btn-lg px-4 fw-bold text-white rounded-3"
-                  style={{ backgroundColor: "#1e88e5" }}
-                  onClick={() => navigate("/forecast_query")}
-                >
-                  Launch Dashboard →
+          <div className="row g-5 align-items-center">
+            <div className="col-lg-6">
+              <span className="badge rounded-pill px-3 py-2 mb-3 text-uppercase fw-bold" style={{ backgroundColor: "rgba(214, 168, 79, 0.15)", color: "#d6a84f", border: "1px solid rgba(214, 168, 79, 0.35)", fontSize: "0.75rem" }}>
+                OUR MISSION
+              </span>
+              <h2 className="fw-bold text-white display-6" style={{ fontFamily: "Georgia, serif" }}>
+                Transforming Bulk Chartering from Reactive to Predictive
+              </h2>
+              <p className="lead mt-3" style={{ color: "#94a3b8", fontSize: "1.05rem" }}>
+                Move bulk chartering away from daily reactive spot-contract uncertainty toward proactive, data-driven short-term and medium-term chartering strategies.
+              </p>
+              <p style={{ color: "#8492a6", lineHeight: "1.7" }}>
+                By integrating multi-horizon freight rate forecasting, AI-assisted vessel optimization, Sagar Unnati port congestion telemetry, and macro dry bulk market intelligence, Butter Freight equips logistics managers to secure the most favorable chartering windows and eliminate costly port delays.
+              </p>
+              <div className="d-flex gap-3 mt-4">
+                <Link to="/about" className="btn btn-outline-light px-4 py-2 rounded-3 fw-semibold">
+                  Read Full Story →
+                </Link>
+                <button className="btn btn-primary px-4 py-2 rounded-3 fw-semibold" onClick={() => navigate("/forecast_query")} style={{ backgroundColor: "#1e88e5" }}>
+                  Launch Decision Cockpit
                 </button>
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <div className="p-4 p-md-5 rounded-4" style={{ backgroundColor: "#0b1724", border: "1px solid #18334d" }}>
+                <div className="d-flex flex-column gap-4">
+                  {[
+                    { title: "Data-Driven Rate Hedging", desc: "Lock short and period fixtures before seasonal rate spikes occur." },
+                    { title: "Vessel Class Suitability", desc: "Minimize deadheading and port demurrage with automated vessel selection." },
+                    { title: "East Coast Terminal Intelligence", desc: "Avoid congested queues with alternative discharge port optimization." },
+                  ].map((item, i) => (
+                    <div className="d-flex gap-3 align-items-start" key={i}>
+                      <span style={{ color: "#d6a84f", fontSize: "1.3rem", fontWeight: "bold" }}>✓</span>
+                      <div>
+                        <h6 className="fw-bold text-white mb-1">{item.title}</h6>
+                        <small style={{ color: "#8492a6" }}>{item.desc}</small>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      {/* IMPROVED BRAND-CONSISTENT TRUSTED BY CLIENT LOGO SECTION */}
+      {/* SUPPORT & FAQ SECTION */}
+      <section
+        className="py-5"
+        style={{ backgroundColor: "#08131e", borderBottom: "1px solid #162234" }}
+        id="support"
+      >
+        <div className="container py-4">
+          <div className="text-center mb-5">
+            <span className="badge rounded-pill px-3 py-2 mb-2 text-uppercase fw-bold" style={{ backgroundColor: "rgba(56, 189, 248, 0.15)", color: "#38bdf8", fontSize: "0.75rem" }}>
+              SUPPORT & GUIDANCE
+            </span>
+            <h2 className="fw-bold text-white mt-1" style={{ fontFamily: "Georgia, serif" }}>
+              How Butter Freight Works
+            </h2>
+            <p className="mx-auto" style={{ color: "#8492a6", maxWidth: "600px" }}>
+              Quick operational answers for procurement directors, logistics coordinators, and chartering teams.
+            </p>
+          </div>
+
+          <div className="row g-4">
+            {[
+              {
+                q: "How do I run a rate forecast?",
+                a: "Select your route, cargo tonnage, and vessel type in the Decision Cockpit. The ML model instantly calculates 30-day and 90-day rate trajectories.",
+              },
+              {
+                q: "What makes vessel optimization smart?",
+                a: "The engine checks port draft, beam, queue wait times, and cargo capacity to recommend the most cost-efficient carrier class.",
+              },
+              {
+                q: "How does the AI Co-Pilot assist me?",
+                a: "Click 'Ask AI' to query market intelligence, compare port congestion, evaluate chartering timing, or explain specific model forecasts.",
+              },
+            ].map((faq, idx) => (
+              <div className="col-md-4" key={idx}>
+                <div className="p-4 rounded-4 h-100" style={{ backgroundColor: "#0a1b2a", border: "1px solid #162e42" }}>
+                  <h6 className="fw-bold text-white mb-2">{faq.q}</h6>
+                  <p className="small mb-0" style={{ color: "#8492a6", lineHeight: "1.6" }}>{faq.a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center mt-4">
+            <Link to="/support" className="text-decoration-none fw-semibold" style={{ color: "#d6a84f" }}>
+              View Full Knowledgebase & FAQs →
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* CONTACT FORM SECTION */}
+      <section
+        className="py-5"
+        style={{ backgroundColor: "#070d18" }}
+        id="contact"
+      >
+        <div className="container py-4">
+          <div className="row g-5 align-items-center">
+            <div className="col-lg-5">
+              <span className="badge rounded-pill px-3 py-2 mb-3 text-uppercase fw-bold" style={{ backgroundColor: "rgba(214, 168, 79, 0.15)", color: "#d6a84f", border: "1px solid rgba(214, 168, 79, 0.35)", fontSize: "0.75rem" }}>
+                CONTACT OPERATIONS
+              </span>
+              <h2 className="fw-bold text-white display-6" style={{ fontFamily: "Georgia, serif" }}>
+                Connect with our Chartering Intelligence Team
+              </h2>
+              <p className="mt-3" style={{ color: "#8492a6", lineHeight: "1.7" }}>
+                Have questions regarding enterprise data feeds, custom discharge port models, or integrating with your ERP? Get in touch with our operations desk.
+              </p>
+              <div className="d-flex flex-column gap-3 mt-4" style={{ color: "#94a3b8" }}>
+                <div>
+                  <small className="d-block text-uppercase fw-bold text-white" style={{ fontSize: "0.75rem" }}>Email</small>
+                  <span>hello@butterfreight.com</span>
+                </div>
+                <div>
+                  <small className="d-block text-uppercase fw-bold text-white" style={{ fontSize: "0.75rem" }}>Coverage Area</small>
+                  <span>India East Coast Bulk Ports & Major Global Loading Origins</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="col-lg-7">
+              <div className="p-4 p-md-5 rounded-4" style={{ backgroundColor: "#091a27", border: "1px solid #162f45" }}>
+                <h4 className="fw-bold text-white mb-3">Send an Inquiry</h4>
+
+                {contactSuccess && (
+                  <div className="alert alert-success d-flex align-items-center gap-2 mb-4" role="alert">
+                    <span>✓</span>
+                    <div>{contactSuccess}</div>
+                  </div>
+                )}
+
+                {contactError && (
+                  <div className="alert alert-danger d-flex align-items-center gap-2 mb-4" role="alert">
+                    <span>⚠️</span>
+                    <div>{contactError}</div>
+                  </div>
+                )}
+
+                <form onSubmit={handleContactSubmit}>
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label small" style={{ color: "#94a3b8" }}>Full Name *</label>
+                      <input
+                        type="text"
+                        name="name"
+                        className="form-control"
+                        placeholder="e.g. Rahul Verma"
+                        value={contactForm.name}
+                        onChange={handleContactChange}
+                        required
+                        style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small" style={{ color: "#94a3b8" }}>Work Email Address *</label>
+                      <input
+                        type="email"
+                        name="email"
+                        className="form-control"
+                        placeholder="e.g. rahul@steelcorp.com"
+                        value={contactForm.email}
+                        onChange={handleContactChange}
+                        required
+                        style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="row g-3 mb-3">
+                    <div className="col-md-6">
+                      <label className="form-label small" style={{ color: "#94a3b8" }}>Organization / Company</label>
+                      <input
+                        type="text"
+                        name="organization"
+                        className="form-control"
+                        placeholder="e.g. JSW / Vedanta / Adani Logistics"
+                        value={contactForm.organization}
+                        onChange={handleContactChange}
+                        style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
+                      />
+                    </div>
+                    <div className="col-md-6">
+                      <label className="form-label small" style={{ color: "#94a3b8" }}>Trade Lane of Interest</label>
+                      <select
+                        name="tradeLane"
+                        className="form-select"
+                        value={contactForm.tradeLane}
+                        onChange={handleContactChange}
+                        style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
+                      >
+                        <option value="Australia (Newcastle) -> Paradip">Australia (Newcastle) → Paradip</option>
+                        <option value="Australia (Newcastle) -> Gangavaram">Australia (Newcastle) → Gangavaram</option>
+                        <option value="Indonesia (Banjarmasin) -> Paradip">Indonesia (Banjarmasin) → Paradip</option>
+                        <option value="Mozambique (Maputo) -> Visakhapatnam">Mozambique (Maputo) → Visakhapatnam</option>
+                        <option value="United States (Houston) -> Dhamra">United States (Houston) → Dhamra</option>
+                        <option value="Russia (Vladivostok) -> Haldia">Russia (Vladivostok) → Haldia</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="mb-4">
+                    <label className="form-label small" style={{ color: "#94a3b8" }}>Inquiry / Message Details *</label>
+                    <textarea
+                      name="message"
+                      rows="4"
+                      className="form-control"
+                      placeholder="Please specify your bulk cargo volume, chartering window, or data questions..."
+                      value={contactForm.message}
+                      onChange={handleContactChange}
+                      required
+                      style={{ backgroundColor: "#06121d", borderColor: "#183650", color: "#ffffff" }}
+                    ></textarea>
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn btn-lg w-100 fw-bold rounded-3"
+                    disabled={contactLoading}
+                    style={{ backgroundColor: "#d6a84f", color: "#071b1e" }}
+                  >
+                    {contactLoading ? (
+                      <span className="d-flex align-items-center justify-content-center gap-2">
+                        <span className="spinner-border spinner-border-sm" role="status"></span>
+                        Submitting Inquiry...
+                      </span>
+                    ) : (
+                      "Submit Inquiry →"
+                    )}
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* BRAND-CONSISTENT TRUSTED BY CLIENT LOGO SECTION */}
       <section className="trusted-band py-4">
         <div className="container d-flex flex-wrap align-items-center justify-content-between gap-4">
           <div className="d-flex align-items-center gap-2">

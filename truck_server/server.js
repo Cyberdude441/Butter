@@ -21,6 +21,7 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import forecastRoutes from "./routes/forecast.js";
 import aiRoutes from "./routes/ai.js";
+import contactRoutes from "./routes/contact.js";
 
 const PORT = process.env.PORT || 7000;
 
@@ -35,6 +36,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use("/api/auth", authRoutes);
 app.use("/api/forecast", forecastRoutes);
 app.use("/api/ai", aiRoutes);
+app.use("/api/contact", contactRoutes);
 
 app.get("/", (req, res) => {
   res.send("Welcome to Intelligent Freight Forecasting Server");

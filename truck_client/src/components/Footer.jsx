@@ -22,7 +22,7 @@ export default function Footer() {
         <div className="row g-4 justify-content-between">
           {/* Brand Col */}
           <div className="col-lg-4 col-md-6">
-            <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none mb-3">
+            <Link to="/" className="d-flex align-items-center gap-2 text-decoration-none mb-3" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
               <span className="brand-mark-circle" aria-hidden="true">
                 B
               </span>
@@ -46,7 +46,7 @@ export default function Footer() {
             <h6 className="footer-heading">Explore</h6>
             <ul className="list-unstyled d-flex flex-column gap-2 mb-0">
               <li>
-                <Link to="/" className="footer-link">
+                <Link to="/" className="footer-link" onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}>
                   Home
                 </Link>
               </li>
@@ -86,26 +86,34 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:hello@butterfreight.com" className="footer-link">
+                <a
+                  href="#contact"
+                  onClick={(e) => { e.preventDefault(); handleScrollTo("contact"); }}
+                  className="footer-link"
+                >
                   Contact
                 </a>
               </li>
               <li>
-                <Link to="/about" className="footer-link">
+                <a
+                  href="#mission"
+                  onClick={(e) => { e.preventDefault(); handleScrollTo("mission"); }}
+                  className="footer-link"
+                >
                   Our Mission
-                </Link>
+                </a>
               </li>
               <li>
-                <a href="mailto:support@butterfreight.com" className="footer-link">
-                  Support
-                </a>
+                <Link to="/support" className="footer-link">
+                  Support & Help
+                </Link>
               </li>
             </ul>
           </div>
 
-          {/* Operational Coverage */}
+          {/* Operational Coverage & Legal */}
           <div className="col-lg-3 col-md-6">
-            <h6 className="footer-heading">Coverage</h6>
+            <h6 className="footer-heading">Coverage & Legal</h6>
             <p className="footer-desc mb-2">
               7 Indian East Coast Ports: Paradip, Visakhapatnam, Gangavaram, Gopalpur, Dhamra, Haldia, Sagar.
             </p>
@@ -113,9 +121,13 @@ export default function Footer() {
               Loading Origins: Australia, US, Mozambique, Russia, Indonesia.
             </p>
             <div className="d-flex gap-3 mt-3">
-              <span className="footer-meta-link" style={{ color: "#94a3b8", fontSize: "0.8rem", cursor: "pointer" }}>Privacy</span>
+              <Link to="/privacy" className="footer-link" style={{ fontSize: "0.82rem" }}>
+                Privacy Policy
+              </Link>
               <span style={{ color: "#64748b" }}>•</span>
-              <span className="footer-meta-link" style={{ color: "#94a3b8", fontSize: "0.8rem", cursor: "pointer" }}>Terms</span>
+              <Link to="/terms" className="footer-link" style={{ fontSize: "0.82rem" }}>
+                Terms of Use
+              </Link>
             </div>
           </div>
         </div>

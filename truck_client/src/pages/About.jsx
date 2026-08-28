@@ -181,8 +181,8 @@ const About = () => {
         </div>
       </section>
 
-      {/* APPROACH */}
-      <section className="py-5" style={{ backgroundColor: "#070d18" }}>
+      {/* APPROACH & MISSION */}
+      <section className="py-5" style={{ backgroundColor: "#070d18" }} id="mission">
         <div className="container py-5">
           <div className="text-center mb-5">
             <small
