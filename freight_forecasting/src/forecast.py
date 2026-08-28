@@ -26,10 +26,11 @@ from .explainability import ForecastExplainer
 from .decision_engine import DecisionEngine
 from .market_intelligence import MarketIntelligence
 from .port_optimizer import PortOptimizer
+from .vessel_optimizer import VesselOptimizer
 
 
 class FreightForecaster:
-    """Unified inference engine integrating preprocessing, ML models, decision rules, explainability & port optimization."""
+    """Unified inference engine integrating preprocessing, ML models, decision rules, explainability, port optimization & vessel selection."""
 
     def __init__(self):
         self.preprocessor: Optional[DataPreprocessor] = None
@@ -38,6 +39,7 @@ class FreightForecaster:
         self.dataset: Optional[pd.DataFrame] = None
         self.routes_df: Optional[pd.DataFrame] = None
         self.port_optimizer: PortOptimizer = PortOptimizer()
+        self.vessel_optimizer: VesselOptimizer = VesselOptimizer()
         self._load_artifacts()
 
     def _load_artifacts(self) -> None:
@@ -114,8 +116,9 @@ class FreightForecaster:
         destination: str = "Paradip",
         vessel_type: str = "Panamax",
         forecast_horizon: object = 30,
+        cargo_quantity: float = 75000.0,
     ) -> Dict[str, Any]:
-        """Execute end-to-end multi-horizon forecast with explainability, market intelligence & port optimization."""
+        """Execute end-to-end multi-horizon forecast with explainability, market intelligence, port optimization & vessel selection."""
         horizon_days = parse_forecast_horizon(forecast_horizon)
         canonical_origin = resolve_origin(origin)[0]
         canonical_dest = resolve_destination(destination)
@@ -209,7 +212,37 @@ class FreightForecaster:
             current_freight_rate=current_rate,
         )
 
-        # 7. Decision Engine (Trend, Volatility, Market Signal, Rationale)
+        # 7. Collect or forecast freight rates for all 4 vessel classes on this trade lane
+        rates_by_vessel = {}
+        for v in ["Handysize", "Supramax", "Panamax", "Capesize"]:
+            if v == canonical_vessel:
+                rates_by_vessel[v] = round(selected_pred, 2)
+            else:
+                try:
+                    v_df = self.select_route_series(origin or "Australia", destination or "Paradip", v)
+                    if not v_df.empty and "historical_freight_rate" in v_df.columns:
+                        v_curr = float(v_df["historical_freight_rate"].iloc[-1])
+                        ratio = selected_pred / max(1.0, current_rate)
+                        rates_by_vessel[v] = round(v_curr * ratio, 2)
+                    else:
+                        rel_factor = {"Handysize": 0.92, "Supramax": 0.96, "Panamax": 1.0, "Capesize": 0.94}.get(v, 1.0)
+                        rates_by_vessel[v] = round(selected_pred * rel_factor, 2)
+                except Exception:
+                    rel_factor = {"Handysize": 0.92, "Supramax": 0.96, "Panamax": 1.0, "Capesize": 0.94}.get(v, 1.0)
+                    rates_by_vessel[v] = round(selected_pred * rel_factor, 2)
+
+        # 8. AI Vessel Optimization & Waiting Time Analysis
+        vessel_optimization = self.vessel_optimizer.optimize_vessel_selection(
+            origin=canonical_origin,
+            destination=canonical_dest,
+            selected_vessel=canonical_vessel,
+            cargo_quantity=float(cargo_quantity or 75000.0),
+            horizon_days=horizon_days,
+            rate_by_vessel=rates_by_vessel,
+            congestion_index=port_analysis.get("congestion_index", 35.0),
+        )
+
+        # 9. Decision Engine (Trend, Volatility, Market Signal, Rationale)
         f_30 = float(active_forecast_dict.get("forecast_30d", {}).get("rate", current_rate))
         f_90 = float(active_forecast_dict.get("forecast_90d", {}).get("rate", current_rate))
         recent_std = float(route_df["historical_freight_rate"].tail(30).std() or 0.5)
@@ -233,16 +266,17 @@ class FreightForecaster:
             market_intel=market_intel,
             port_analysis=port_analysis,
             optimal_port=optimal_port,
+            vessel_optimization=vessel_optimization,
         )
 
-        # 8. Explainability (TreeSHAP & Top Drivers)
+        # 10. Explainability (TreeSHAP & Top Drivers)
         last_row = processed_all[available_cols].iloc[-1]
         baseline_means = processed_all[available_cols].mean()
         top_drivers = ForecastExplainer.explain_prediction(
             last_row, baseline_means, feature_importances, top_k=5
         )
 
-        # 9. Time-series Rate Projection Data for Frontend Chart (-3M, -2M, -1M, Current, +1M, +2M, +3M)
+        # 11. Time-series Rate Projection Data for Frontend Chart (-3M, -2M, -1M, Current, +1M, +2M, +3M)
         def get_hist_rate(days_back: int, default_factor: float) -> float:
             if len(route_df) >= days_back:
                 val = float(route_df["historical_freight_rate"].iloc[-days_back])
@@ -275,6 +309,7 @@ class FreightForecaster:
             "origin": canonical_origin,
             "destination": canonical_dest,
             "vessel_type": canonical_vessel,
+            "cargo_quantity": float(cargo_quantity or 75000.0),
             "as_of_date": current_date,
             "current_freight_rate": round(current_rate, 2),
             "predicted_freight_rate": round(selected_pred, 2),
@@ -318,5 +353,11 @@ class FreightForecaster:
             "market_intelligence": market_intel,
             "port_analysis": port_analysis,
             "optimal_port": optimal_port,
+            "vessel_optimization": vessel_optimization,
+            "vesselOptimization": vessel_optimization,
+            "selected_vessel": vessel_optimization.get("selected_vessel"),
+            "optimized_vessel": vessel_optimization.get("optimized_vessel"),
+            "optimal_vessel": vessel_optimization.get("optimized_vessel"),
+            "optimization_comparison": vessel_optimization.get("optimization_comparison"),
             "data_status": DATA_STATUS_INFO,
         }

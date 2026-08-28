@@ -125,6 +125,16 @@ PORT_OPTIMIZATION_WEIGHTS = {
     "risk": 0.10,
 }
 
+# Vessel Optimization Weights (Sum = 1.0)
+VESSEL_OPTIMIZATION_WEIGHTS = {
+    "economics": 0.25,
+    "port_compatibility": 0.20,
+    "waiting_idle_efficiency": 0.20,
+    "cargo_utilization": 0.15,
+    "market_forecast_advantage": 0.10,
+    "operational_risk": 0.10,
+}
+
 DATA_STATUS_INFO = {
     "freight_rates": "PROXY / CALIBRATED HISTORICAL",
     "bunker_prices": "REAL / BENCHMARK SINGAPORE VLSFO",

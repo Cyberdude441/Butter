@@ -21,6 +21,7 @@ def make_response(payload: dict) -> dict:
     origin = str(payload.get("origin") or "Australia")
     destination = str(payload.get("destination") or "Paradip")
     vessel = str(payload.get("vesselType") or payload.get("vessel_type") or "Panamax")
+    cargo_quantity = float(payload.get("cargo_quantity") or payload.get("cargoQuantity") or 75000.0)
     horizon = parse_forecast_horizon(payload.get("forecastPeriod") or payload.get("forecast_horizon") or 30)
 
     res = FORECASTER.predict(
@@ -28,6 +29,7 @@ def make_response(payload: dict) -> dict:
         destination=destination,
         vessel_type=vessel,
         forecast_horizon=horizon,
+        cargo_quantity=cargo_quantity,
     )
 
     f30 = res.get("forecast_details", {}).get("forecast_30d", {})
@@ -38,6 +40,8 @@ def make_response(payload: dict) -> dict:
         "destination": res["destination"],
         "vessel_type": res["vessel_type"],
         "vesselType": res["vessel_type"],
+        "cargo_quantity": res.get("cargo_quantity", cargo_quantity),
+        "cargoQuantity": res.get("cargo_quantity", cargo_quantity),
         "model": res["selected_model"],
         "modelScores": {
             "SARIMA": res["benchmark_models"]["SARIMA"]["validation_mae"],
@@ -77,6 +81,12 @@ def make_response(payload: dict) -> dict:
         "portAnalysis": res.get("port_analysis"),
         "optimal_port": res.get("optimal_port"),
         "optimalPort": res.get("optimal_port"),
+        "vessel_optimization": res.get("vessel_optimization"),
+        "vesselOptimization": res.get("vessel_optimization"),
+        "selected_vessel": res.get("selected_vessel"),
+        "optimized_vessel": res.get("optimized_vessel"),
+        "optimal_vessel": res.get("optimal_vessel"),
+        "optimization_comparison": res.get("optimization_comparison"),
         "dataStatus": res["data_status"],
         "trainingObservations": len(FORECASTER.dataset) if FORECASTER.dataset is not None else 25000,
         "benchmark": {

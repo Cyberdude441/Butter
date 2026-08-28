@@ -116,8 +116,9 @@ class DecisionEngine:
         market_intel: Dict[str, Any],
         port_analysis: Dict[str, Any],
         optimal_port: Dict[str, Any],
+        vessel_optimization: Optional[Dict[str, Any]] = None,
     ) -> str:
-        """Create an integrated, deterministic market summary combining ML forecast, market dynamics, and port optimization."""
+        """Create an integrated, deterministic market summary combining ML forecast, market dynamics, port optimization, and vessel selection."""
         p_name = port_analysis.get("selected_port", "Discharge Port")
         cong_level = port_analysis.get("congestion_level", "Medium")
         delay_days = port_analysis.get("estimated_delay_days", 2.0)
@@ -141,10 +142,19 @@ class DecisionEngine:
         # Port statement
         port_stmt = f"{p_name} currently experiences {cong_level} congestion with an estimated operational delay of ~{delay_days} days."
 
-        # Recommendation statement
-        if rec_type == "Keep Selected Port" or rec_port == p_name:
-            opt_stmt = f"{p_name} remains the optimal discharge terminal with direct berth compatibility and balanced turnaround."
-        else:
-            opt_stmt = f"Routing to {rec_port} is recommended to reduce estimated vessel waiting time by ~{optimal_port.get('expected_delay_difference_days', 0.5)} days."
+        # Vessel optimization statement
+        vessel_stmt = ""
+        if vessel_optimization:
+            opt_vessel = vessel_optimization.get("optimized_vessel", {})
+            sel_vessel = vessel_optimization.get("selected_vessel", {})
+            opt_name = opt_vessel.get("vessel_type")
+            sel_name = sel_vessel.get("vessel_type")
+            time_saved = vessel_optimization.get("optimization_comparison", {}).get("waiting_time_saved_days", 0.0)
+            score_imp = vessel_optimization.get("optimization_comparison", {}).get("operational_score_improvement", 0.0)
 
-        return f"{rate_stmt} {market_stmt} {port_stmt} {opt_stmt}"
+            if vessel_optimization.get("is_user_selection_optimal", True):
+                vessel_stmt = f"Your selected {sel_name} vessel is optimal for this cargo parcel and route."
+            else:
+                vessel_stmt = f"Chartering an optimized {opt_name} vessel is recommended over {sel_name}, expected to save ~{time_saved} days in port waiting time (+{score_imp} pts efficiency)."
+
+        return f"{rate_stmt} {market_stmt} {port_stmt} {vessel_stmt}".strip()

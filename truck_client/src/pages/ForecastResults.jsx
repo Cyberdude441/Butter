@@ -754,6 +754,201 @@ const ForecastResults = () => {
                 </div>
               )}
 
+              {/* AI VESSEL OPTIMIZATION & WAITING TIME ENGINE */}
+              {analysis && (analysis.vessel_optimization || analysis.forecast?.vessel_optimization) && (() => {
+                const vOpt = analysis.vessel_optimization || analysis.forecast?.vessel_optimization;
+                const selV = vOpt.selected_vessel || {};
+                const optV = vOpt.optimized_vessel || {};
+                const comp = vOpt.optimization_comparison || {};
+                const isOptimal = vOpt.is_user_selection_optimal;
+
+                return (
+                  <div className="mt-5">
+                    <div className="text-center mb-4">
+                      <small className="text-uppercase fw-bold tracking-wider" style={{ color: "#0284c7", fontSize: "0.75rem" }}>
+                        AI VESSEL OPTIMIZATION ENGINE
+                      </small>
+                      <h3 className="fw-bold mt-1 mb-0" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                        AI-Assisted Vessel Selection & Waiting Time Analysis
+                      </h3>
+                      <p className="text-muted mt-1 small">
+                        Multi-factor evaluation across cargo parcel size, port draft limits, queuing delay, and market economics.
+                      </p>
+                    </div>
+
+                    {/* Main Vessel Optimization Card */}
+                    <div className="card border-0 rounded-4 shadow-sm p-2 mb-4" style={{ backgroundColor: "#fafaf9", border: "1px solid #e7e5e4" }}>
+                      <div className="card-body p-4 p-md-5">
+                        {/* Top Header Bar */}
+                        <div className="d-flex flex-wrap align-items-center justify-content-between gap-3 pb-3 mb-4" style={{ borderBottom: "1px solid #e7e5e4" }}>
+                          <div>
+                            <h4 className="fw-bold mb-1" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                              {isOptimal ? "Your Selected Vessel is Optimal" : `Optimization Found: ${optV.vessel_type} Recommended`}
+                            </h4>
+                            <small style={{ color: "#64748b" }}>
+                              User Selected: <strong style={{ color: "#0f172a" }}>{selV.vessel_type}</strong> | AI Recommended: <strong style={{ color: "#0284c7" }}>{optV.vessel_type}</strong>
+                            </small>
+                          </div>
+
+                          <span
+                            className="badge rounded-pill px-3.5 py-2 fw-bold"
+                            style={{
+                              backgroundColor: isOptimal ? "#15803d" : "#0066ff",
+                              color: "#ffffff",
+                              fontSize: "0.95rem",
+                              boxShadow: isOptimal ? "0 2px 4px rgba(21, 128, 61, 0.2)" : "0 2px 4px rgba(0, 102, 255, 0.2)"
+                            }}
+                          >
+                            {vOpt.status}
+                          </span>
+                        </div>
+
+                        {/* Key KPI Metrics Grid */}
+                        <div className="row g-3 mb-4">
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 rounded-4 bg-white border text-center shadow-xs">
+                              <small className="text-uppercase fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Waiting Time Saved</small>
+                              <h3 className="fw-bold mt-1 mb-0" style={{ color: comp.waiting_time_saved_days > 0 ? "#15803d" : "#0f172a" }}>
+                                {comp.waiting_time_saved_days > 0 ? `${comp.waiting_time_saved_days}` : "0.0"} <span className="fs-6 fw-normal text-muted">Days</span>
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 rounded-4 bg-white border text-center shadow-xs">
+                              <small className="text-uppercase fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Idle Time Reduction</small>
+                              <h3 className="fw-bold mt-1 mb-0" style={{ color: comp.idle_time_reduction_percent > 0 ? "#0284c7" : "#0f172a" }}>
+                                {comp.idle_time_reduction_percent > 0 ? `${comp.idle_time_reduction_percent}%` : "0.0%"}
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 rounded-4 bg-white border text-center shadow-xs">
+                              <small className="text-uppercase fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Operational Score</small>
+                              <h3 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
+                                {selV.total_operational_score} <span className="text-muted fs-6">→</span> <span style={{ color: "#0284c7" }}>{optV.total_operational_score}</span>
+                              </h3>
+                            </div>
+                          </div>
+
+                          <div className="col-6 col-md-3">
+                            <div className="p-3 rounded-4 bg-white border text-center shadow-xs">
+                              <small className="text-uppercase fw-semibold text-muted" style={{ fontSize: "0.75rem" }}>Forecast Rate</small>
+                              <h3 className="fw-bold mt-1 mb-0" style={{ color: "#0f172a" }}>
+                                ${optV.forecast_freight_rate} <span className="fs-6 fw-normal text-muted">/MT</span>
+                              </h3>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Rationale & Recommendations Box */}
+                        <div className="p-3.5 rounded-3 mb-4" style={{ backgroundColor: "#f0fdf4", border: "1px solid #bbf7d0" }}>
+                          <div className="d-flex align-items-start gap-2">
+                            <span className="fs-4 flex-shrink-0">🎯</span>
+                            <div>
+                              <strong style={{ color: "#14532d", fontSize: "0.95rem" }}>AI Recommendation Rationale:</strong>
+                              <p className="mb-2 mt-1" style={{ color: "#166534", fontSize: "0.92rem", lineHeight: "1.5" }}>
+                                {vOpt.recommendation_summary}
+                              </p>
+                              {optV.recommendation_reasons?.length > 0 && (
+                                <ul className="mb-0 ps-3" style={{ color: "#15803d", fontSize: "0.88rem" }}>
+                                  {optV.recommendation_reasons.map((r, i) => (
+                                    <li key={i}>{r}</li>
+                                  ))}
+                                </ul>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Comparison Matrix Table */}
+                        {vOpt.vessel_rankings?.length > 0 && (
+                          <div>
+                            <h5 className="fw-bold mb-3" style={{ fontFamily: "'Playfair Display', Georgia, serif", color: "#1c1917" }}>
+                              Vessel Classes Comparison Matrix
+                            </h5>
+                            <div className="table-responsive rounded-3" style={{ border: "1px solid #e2e8f0" }}>
+                              <table className="table table-hover align-middle mb-0" style={{ backgroundColor: "#ffffff" }}>
+                                <thead style={{ backgroundColor: "#f8fafc" }}>
+                                  <tr style={{ borderBottom: "2px solid #cbd5e1" }}>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Rank</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Vessel Class</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Feasibility</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Forecast Rate</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Wait Time</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Idle Time</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Cargo Util.</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Score</th>
+                                    <th style={{ color: "#334155", fontWeight: "700", fontSize: "0.82rem", textTransform: "uppercase", padding: "12px 14px" }}>Operational Notes</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {vOpt.vessel_rankings.map((vr) => {
+                                    const isRec = vr.is_recommended;
+                                    const isSel = vr.is_selected;
+                                    return (
+                                      <tr key={vr.vessel_type} style={{
+                                        backgroundColor: isRec ? "#f0fdf4" : isSel ? "#f0f9ff" : vr.feasible ? "#ffffff" : "#fff1f2",
+                                        borderBottom: "1px solid #e2e8f0"
+                                      }}>
+                                        <td style={{ padding: "12px 14px" }}>
+                                          <span className="fw-bold" style={{ color: isRec ? "#d97706" : vr.feasible ? "#0f172a" : "#94a3b8" }}>
+                                            {isRec ? "🥇 #1" : vr.feasible ? `#${vr.rank}` : "—"}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: "12px 14px" }}>
+                                          <span className="fw-bold" style={{ color: "#0f172a", fontSize: "0.95rem" }}>{vr.vessel_type}</span>
+                                          {isRec && <span className="badge rounded-pill bg-warning text-dark ms-2 fw-semibold px-2 py-0.5">AI Recommended</span>}
+                                          {isSel && <span className="badge rounded-pill bg-info text-dark ms-2 fw-semibold px-2 py-0.5">User Selected</span>}
+                                        </td>
+                                        <td style={{ padding: "12px 14px" }}>
+                                          <span
+                                            className="badge rounded-pill px-2.5 py-1.5 fw-bold"
+                                            style={{
+                                              backgroundColor: vr.feasible ? "#dcfce7" : "#fee2e2",
+                                              color: vr.feasible ? "#15803d" : "#b91c1c",
+                                              border: `1px solid ${vr.feasible ? "#86efac" : "#fca5a5"}`,
+                                              fontSize: "0.8rem",
+                                            }}
+                                          >
+                                            {vr.feasible ? "✓ Feasible" : "⚠ Not Feasible"}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: "12px 14px", color: "#0f172a", fontWeight: "600" }}>
+                                          ${vr.forecast_freight_rate}/MT
+                                        </td>
+                                        <td style={{ padding: "12px 14px", color: "#0f172a" }}>
+                                          {vr.waiting_time_days != null ? `~${vr.waiting_time_days} days` : "N/A"}
+                                        </td>
+                                        <td style={{ padding: "12px 14px", color: "#0f172a" }}>
+                                          {vr.idle_time_days != null ? `~${vr.idle_time_days} days` : "N/A"}
+                                        </td>
+                                        <td style={{ padding: "12px 14px", color: "#0f172a", fontWeight: "600" }}>
+                                          {vr.cargo_utilization_pct}%
+                                        </td>
+                                        <td style={{ padding: "12px 14px" }}>
+                                          <span className="fw-bold" style={{ color: vr.feasible ? "#0284c7" : "#94a3b8", fontSize: "1.05rem" }}>
+                                            {vr.feasible ? vr.optimization_score : "Not Feasible"}
+                                          </span>
+                                        </td>
+                                        <td style={{ padding: "12px 14px", color: "#334155", fontSize: "0.85rem", maxWidth: "280px", lineHeight: "1.4" }}>
+                                          {vr.notes}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {/* OPTIMAL PORT RECOMMENDATION ENGINE */}
               {analysis && (analysis.optimal_port || analysis.forecast?.optimal_port) && (() => {
                 const opt = analysis.optimal_port || analysis.forecast?.optimal_port;
