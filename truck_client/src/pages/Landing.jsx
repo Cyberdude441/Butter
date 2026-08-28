@@ -733,30 +733,25 @@ const Home = () => {
               Trusted by charterers and logistics teams
             </small>
           </div>
-          <div className="trusted-companies-grid d-flex flex-wrap align-items-center gap-4 gap-lg-5">
-            <div className="company-logo-item d-flex align-items-center gap-2" title="Adani Group">
+          <div className="trusted-companies-grid d-flex flex-wrap align-items-center justify-content-center justify-content-lg-end gap-4 gap-lg-5">
+            <div className="company-logo-item d-flex align-items-center p-1 rounded" title="Adani Group">
               <AdaniLogo />
-              <strong className="trusted-client">adani</strong>
             </div>
 
-            <div className="company-logo-item d-flex align-items-center gap-2" title="JSW Group">
+            <div className="company-logo-item d-flex align-items-center p-1 rounded" title="JSW Group">
               <JSWLogo />
-              <strong className="trusted-client">JSW</strong>
             </div>
 
-            <div className="company-logo-item d-flex align-items-center gap-2" title="Vedanta Resources">
+            <div className="company-logo-item d-flex align-items-center p-1 rounded" title="Vedanta Resources">
               <VedantaLogo />
-              <strong className="trusted-client">vedanta</strong>
             </div>
 
-            <div className="company-logo-item d-flex align-items-center gap-2" title="ArcelorMittal Nippon Steel India">
+            <div className="company-logo-item d-flex align-items-center p-1 rounded" title="ArcelorMittal Nippon Steel India">
               <AMNSLogo />
-              <strong className="trusted-client">AM/NS INDIA</strong>
             </div>
 
-            <div className="company-logo-item d-flex align-items-center gap-2" title="Maithan Alloys Ltd">
+            <div className="company-logo-item d-flex align-items-center p-1 rounded" title="Maithan Alloys Ltd">
               <MaithanLogo />
-              <strong className="trusted-client">Maithan Alloys</strong>
             </div>
           </div>
         </div>
