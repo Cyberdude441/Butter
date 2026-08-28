@@ -747,11 +747,11 @@ const ForecastResults = () => {
                       </div>
 
                       {/* Highlight Recommendation Card */}
-                      <div className="p-4 rounded-3 mb-4" style={{ backgroundColor: "#0b1320", border: `1px solid ${isOptimal ? "#064e3b" : "#b45309"}` }}>
-                        <div className="row align-items-center g-3">
-                          <div className="col-lg-8">
+                      <div className="p-4 rounded-4 mb-4" style={{ backgroundColor: "#0b1320", border: `1px solid ${isOptimal ? "#064e3b" : "#b45309"}` }}>
+                        <div className="row g-4 align-items-center">
+                          <div className="col-12 col-lg-8">
                             <div className="d-flex align-items-center gap-3 mb-2">
-                              <span className="fs-2">🎯</span>
+                              <span className="fs-2 flex-shrink-0">🎯</span>
                               <div>
                                 <h4 className="fw-bold text-white mb-0">
                                   Recommended: <span style={{ color: "#38bdf8" }}>{opt.recommended_port}</span>
@@ -761,22 +761,48 @@ const ForecastResults = () => {
                                 </small>
                               </div>
                             </div>
-                            <p className="mt-2 mb-2 text-white-50" style={{ lineHeight: "1.6" }}>
+
+                            <p className="mt-2 mb-0 text-white-50" style={{ lineHeight: "1.6", fontSize: "0.95rem" }}>
                               {opt.reason}
                             </p>
-                            <div className="d-flex align-items-center gap-2 mt-2">
-                              <span className="badge bg-primary-subtle text-primary border border-primary-subtle px-2 py-1">
-                                ⚡ Operational Benefit: {opt.expected_operational_benefit}
+
+                            <div
+                              className="d-flex align-items-start gap-2 mt-3 p-2 px-3 rounded-3"
+                              style={{
+                                backgroundColor: "rgba(56, 189, 248, 0.08)",
+                                border: "1px solid rgba(56, 189, 248, 0.2)",
+                                color: "#38bdf8",
+                                fontSize: "0.85rem",
+                                lineHeight: "1.5",
+                                maxWidth: "100%",
+                              }}
+                            >
+                              <span className="flex-shrink-0">⚡</span>
+                              <span className="fw-medium text-break">
+                                <strong>Operational Benefit:</strong> {opt.expected_operational_benefit}
                               </span>
                             </div>
                           </div>
-                          <div className="col-lg-4 text-lg-end">
-                            <div className="p-3 rounded-3" style={{ backgroundColor: "#070d18", border: "1px solid #162234" }}>
-                              <small className="text-muted d-block">Optimization Score</small>
-                              <h2 className="fw-bold text-white mb-1" style={{ color: "#38bdf8" }}>
-                                {opt.optimization_score} <span className="fs-6 text-muted fw-normal">/ 100</span>
-                              </h2>
-                              <small className="text-info">
+
+                          <div className="col-12 col-lg-4">
+                            <div
+                              className="p-3 rounded-4 text-center h-100 d-flex flex-column justify-content-center"
+                              style={{
+                                backgroundColor: "#070d18",
+                                border: "1px solid #162234",
+                                minWidth: "160px",
+                              }}
+                            >
+                              <small style={{ color: "#8492a6", fontSize: "0.75rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                Optimization Score
+                              </small>
+                              <div className="d-flex align-items-baseline justify-content-center gap-1 my-1">
+                                <span className="fw-bold" style={{ fontSize: "2.25rem", color: "#38bdf8", lineHeight: "1" }}>
+                                  {opt.optimization_score}
+                                </span>
+                                <span style={{ color: "#64748b", fontSize: "0.9rem" }}>/ 100</span>
+                              </div>
+                              <small style={{ color: opt.congestion_level === "Low" ? "#34d399" : opt.congestion_level === "High" ? "#f87171" : "#fbbf24", fontSize: "0.8rem", fontWeight: "500" }}>
                                 Est. Delay: ~{opt.estimated_delay_days}d ({opt.congestion_level} Congestion)
                               </small>
                             </div>
