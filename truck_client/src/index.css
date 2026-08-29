@@ -601,3 +601,49 @@ textarea.contact-white-textarea:focus {
 .company-logo-item:hover strong.trusted-client {
   color: #d6a84f !important;
 }
+
+/* ============================================================ */
+/* UNIFORM SELECT, OPTGROUP & OPTION STYLING */
+/* ============================================================ */
+select.cargo-select-control,
+.query-field select,
+select.form-select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border: 1.5px solid #cbd5e1 !important;
+  border-radius: 8px !important;
+  font-weight: 500 !important;
+  font-size: 0.95rem !important;
+  padding: 10px 14px !important;
+}
+
+select.cargo-select-control:focus,
+.query-field select:focus,
+select.form-select:focus {
+  border-color: #d6a84f !important;
+  box-shadow: 0 0 0 3px rgba(214, 168, 79, 0.25) !important;
+  outline: none !important;
+}
+
+/* Clear readable Optgroups and Options */
+optgroup {
+  font-weight: 700 !important;
+  font-size: 0.88rem !important;
+  color: #1e3a5f !important;
+  background-color: #f1f5f9 !important;
+  padding: 6px 10px !important;
+}
+
+option {
+  font-weight: 400 !important;
+  font-size: 0.92rem !important;
+  color: #0f172a !important;
+  background-color: #ffffff !important;
+  padding: 6px 12px !important;
+}
+
+option:checked,
+option:hover {
+  background-color: #e2e8f0 !important;
+  color: #071b1e !important;
+}
