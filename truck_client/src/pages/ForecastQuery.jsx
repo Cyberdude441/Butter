@@ -249,10 +249,23 @@ function ForecastQuery() {
                     <label className="form-label small" style={{ color: "#8492a6" }}>Cargo Commodity Type</label>
                     <select className="form-select bg-dark text-white" style={{ borderColor: "#162234" }} name="cargoType" value={formData.cargoType} onChange={handleChange} required>
                       <option value="">Select Cargo</option>
-                      <option value="Thermal Coal">Thermal Coal</option>
-                      <option value="Coking Coal">Coking Coal</option>
-                      <option value="PCI Coal">PCI Coal</option>
-                      <option value="Anthracite Coal">Anthracite Coal</option>
+                      <optgroup label="Coal & Energy Bulk" style={{ backgroundColor: "#0b1724", color: "#d6a84f" }}>
+                        <option value="Thermal Coal" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Thermal Coal</option>
+                        <option value="Coking Coal" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Coking Coal (Met Coal)</option>
+                        <option value="PCI Coal" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>PCI Coal (Pulverized Injection)</option>
+                        <option value="Anthracite Coal" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Anthracite Coal</option>
+                        <option value="Petroleum Coke (Petcoke)" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Petroleum Coke (Petcoke)</option>
+                      </optgroup>
+                      <optgroup label="Ores & Industrial Minerals" style={{ backgroundColor: "#0b1724", color: "#d6a84f" }}>
+                        <option value="Iron Ore (Fines, Lumps, Pellets)" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Iron Ore (Fines, Lumps, Pellets)</option>
+                        <option value="Bauxite & Alumina" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Bauxite & Alumina</option>
+                        <option value="Manganese Ore" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Manganese Ore</option>
+                        <option value="Limestone & Dolomite" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Limestone & Dolomite</option>
+                      </optgroup>
+                      <optgroup label="Fertilizers & Agri-Bulk" style={{ backgroundColor: "#0b1724", color: "#d6a84f" }}>
+                        <option value="Fertilizers & Phosphates (Urea, DAP)" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Fertilizers & Phosphates (Urea, DAP, Rock Phosphate)</option>
+                        <option value="Grain & Agri-Bulk (Wheat, Corn, Soybeans)" style={{ color: "#ffffff", backgroundColor: "#070d18" }}>Grain & Agri-Bulk (Wheat, Corn, Soybeans)</option>
+                      </optgroup>
                     </select>
                   </div>
                   <div className="col-md-6">
